@@ -16,6 +16,7 @@ grep "{Filter Name}" id.txt
 grep "Movie theater" id.txt
 ```
 
+<br>
 
 ### ID에 해당하는 list만들기
 ```
@@ -26,7 +27,7 @@ curl -o id_list/{file name}.txt https://storage.googleapis.com/data.yt8m.org/2/j
 ```
 curl -o id_list/movie_ids.txt https://storage.googleapis.com/data.yt8m.org/2/j/v/0kcc7.js
 ```
-
+<br>
 
 ### Filter의 데이터 다운로드
 ```
@@ -37,6 +38,7 @@ download_and_process.py (재훈님 도와줘요)
 ```
 download_and_process.py (재훈님 도와줘요)
 ```
+<br>
 
 # My Project
 This project focuses on using the YouTube 8M dataset to develop models for video-to-text and text-to-video applications.
