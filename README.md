@@ -2,9 +2,9 @@
     <img src="https://capsule-render.vercel.app/api?type=waving&color=auto&height=300&section=header&text=CV-15&fontSize=40&animation=fadeIn&fontAlignY=38&desc=박지완&descAlignY=51&descAlign=62"/>
 </p>
 
-### Data
+# Data
 
-Filter의 ID(mid)값 찾기 
+### Filter의 ID(mid)값 찾기 
 ```
 cd dataset
 grep "{Filter Name}" id.txt
@@ -17,7 +17,7 @@ grep "Movie theater" id.txt
 ```
 
 
-ID에 해당하는 list만들기
+### ID에 해당하는 list만들기
 ```
 curl -o id_list/{file name}.txt https://storage.googleapis.com/data.yt8m.org/2/j/v/{id}.js
 ```
@@ -28,7 +28,7 @@ curl -o id_list/movie_ids.txt https://storage.googleapis.com/data.yt8m.org/2/j/v
 ```
 
 
-Filter의 데이터 다운로드
+### Filter의 데이터 다운로드
 ```
 download_and_process.py (재훈님 도와줘요)
 ```
