@@ -52,3 +52,4 @@ This project leverages the [YouTube 8M dataset](https://research.google.com/yout
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+아직 어떤 license를 사용해야할 지 모르겠음
