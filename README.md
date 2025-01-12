@@ -37,3 +37,18 @@ download_and_process.py (재훈님 도와줘요)
 ```
 download_and_process.py (재훈님 도와줘요)
 ```
+
+# My Project
+This project focuses on using the YouTube 8M dataset to develop models for video-to-text and text-to-video applications.
+
+The primary goal is to enable efficient translation of video content into meaningful textual descriptions and to identify matching video scenes based on text input.
+
+## Features
+- **Video-to-Text**: Generate detailed captions or descriptions from video data.
+- **Text-to-Video**: Identify and retrieve video scenes that match the given text input.
+
+## Dataset
+This project leverages the [YouTube 8M dataset](https://research.google.com/youtube8m/) for training and evaluation.
+
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
