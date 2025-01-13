@@ -31,13 +31,9 @@ curl -o id_list/movie_ids.txt https://storage.googleapis.com/data.yt8m.org/2/j/v
 
 ### Filter의 데이터 다운로드
 ```
-download_and_process.py (재훈님 도와줘요)
+partition=2/frame/train mirror=asia python download_and_process.py
 ```
 
-***Example Usage***
-```
-download_and_process.py (재훈님 도와줘요)
-```
 <br>
 
 # My Project
