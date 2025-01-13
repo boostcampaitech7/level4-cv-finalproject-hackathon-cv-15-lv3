@@ -24,7 +24,7 @@ def download_video(url, output_path):
     
 def main():
     # 입력 파일과 출력 디렉토리 경로 설정
-    urls_file = "dataset/movie_urls.txt"
+    urls_file = "movie_urls.txt"
     output_dir = "./videos"
     
     # 출력 디렉토리가 없으면 생성
