@@ -1,6 +1,7 @@
 import yt_dlp
 import os
 
+# url 사용해 유튜브 다운로드 함수 
 def download_video(url, output_path):
     try:
         # yt-dlp 옵션 설정
