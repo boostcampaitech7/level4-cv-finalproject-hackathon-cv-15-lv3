@@ -1,7 +1,7 @@
 from PIL import Image
 from transformers import AutoTokenizer, AutoProcessor, AutoConfig, AutoModel
 from decord import VideoReader, cpu  # Ensure decord is installed: pip install decord
-import torch
+import torch # torch version is  >= 2.1.1, i used '2.5.1+cu118' 
 
 # Model and configuration setup
 model_path = 'mPLUG/mPLUG-Owl3-7B-240728'
