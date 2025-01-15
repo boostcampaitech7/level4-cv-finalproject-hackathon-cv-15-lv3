@@ -27,7 +27,7 @@ messages = [
 ]
 
 # Video paths
-videos = ['/data/ephemeral/home/videos/Home Alone (1990) - Kevin Escapes Scene (5⧸5) ｜ Movieclips.mp4']
+videos = ['/data/ephemeral/home/clips/Home Alone (1990) - Kevin Escapes Scene (5⧸5) ｜ Movieclips_clips/clip_026.mp4']
 MAX_NUM_FRAMES = 16
 
 def encode_video(video_path):
