@@ -12,7 +12,7 @@ def save_scene(video_path, start_time, end_time, output_folder, scene_number):
     end_frame = int(end_time * fps)
 
     cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
     output_path = os.path.join(output_folder, f"scene_{scene_number:03d}.mp4")
     
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -29,7 +29,7 @@ def save_scene(video_path, start_time, end_time, output_folder, scene_number):
     cap.release()
     out.release()
 
-def process_video(input_video, output_folder, min_scene_length=1.0):
+def process_video(input_video, output_folder, min_scene_length=5.0, max_scene_length=15.0):
     """Processes a video, saves scenes longer than min_scene_length to output_folder, and logs scene details to JSON."""
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -37,6 +37,7 @@ def process_video(input_video, output_folder, min_scene_length=1.0):
     video_manager = VideoManager([input_video])
     scene_manager = SceneManager()
     scene_manager.add_detector(ContentDetector())
+    # scene_manager.add_detector(HashDetector())
 
     video_manager.set_downscale_factor()  # Downscale for faster processing
     video_manager.start()
@@ -61,7 +62,7 @@ def process_video(input_video, output_folder, min_scene_length=1.0):
             scene[1].get_timecode(), scene[1].get_frames(),
         ))
 
-        if duration >= min_scene_length:
+        if duration >= min_scene_length and duration <= max_scene_length:
             print(f"Saving scene {scene_number}: {scene[0].get_timecode()} to {scene[1].get_timecode()} ({duration:.2f}s)")
             save_scene(input_video, start_time, end_time, output_folder, scene_number)
 
@@ -83,6 +84,11 @@ def process_video(input_video, output_folder, min_scene_length=1.0):
     video_manager.release()
 
 if __name__ == "__main__":
-    input_video_path = "/data/ephemeral/home/jiwan/level4-cv-finalproject-hackathon-cv-15-lv3/pre-processing/videos/2XWzrOzq22E.mp4"  # Replace with your video path
-    output_directory = "/data/ephemeral/home/jiwan/level4-cv-finalproject-hackathon-cv-15-lv3/pre-processing/output"   # Replace with your desired output folder
+    # root_path = "./data/Youtube-8M-Movieclips/videos"
+    # video_files = os.listdir(root_path)
+    # print(len(video_files))
+    # assert False
+
+    input_video_path = "./data/Youtube-8M-Movieclips/videos/7QZB_cbjdM8.mp4"  # Replace with your video path
+    output_directory = "./data/Youtube-8M-Movieclips/outputs"   # Replace with your desired output folder
     process_video(input_video_path, output_directory)
