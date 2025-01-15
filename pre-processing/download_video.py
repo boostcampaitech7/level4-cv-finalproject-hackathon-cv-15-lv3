@@ -50,7 +50,7 @@ def download_videos_and_audio(file_path, video_folder="video", audio_folder="aud
         print(f"An unexpected error occurred: {e}")
 
 # Example usage
-input_file = "/Users/imch/workspace/level4-cv-finalproject-hackathon-cv-15-lv3/pre-processing/Movieclips_urls.txt"  # Replace with your URL file path
-video_folder = "video"
-audio_folder = "audio"
+input_file = "/Users/imch/workspace/level4-cv-finalproject-hackathon-cv-15-lv3/pre-processing/clip2.txt"  # Replace with your URL file path
+video_folder = "videos"
+audio_folder = "audios"
 download_videos_and_audio(input_file, video_folder, audio_folder)
