@@ -1,7 +1,9 @@
 import os
 import subprocess
+import argparse
 
-def download_videos_and_audio(file_path, video_folder="video", audio_folder="audio"):
+
+def download_videos_audios(file_path, video_folder, audio_folder):
     try:
         # Create folders if they don't exist
         os.makedirs(video_folder, exist_ok=True)
@@ -49,8 +51,18 @@ def download_videos_and_audio(file_path, video_folder="video", audio_folder="aud
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
-# Example usage
-input_file = "pre-processing/Movieclips_urls.txt"  # Replace with your URL file path
-video_folder = "videos"
-audio_folder = "audios"
-download_videos_and_audio(input_file, video_folder, audio_folder)
+# Todo: Add a main function to run the script
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Download videos and audio from YouTube URLs.")
+    parser.add_argument("--category_name", type=str, help="The category name for the videos and audios.")
+    args = parser.parse_args()
+
+    category_name = args.category_name
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    input_file = os.path.join(script_dir, f"category-{category_name}-info/{category_name}_urls.txt") # Todo: if you want to use a different file, change this path
+    video_folder = os.path.join(script_dir, f"data/{category_name}/videos")
+    audio_folder = os.path.join(script_dir, f"data/{category_name}/audios")
+    
+    download_videos_audios(input_file, video_folder, audio_folder)
+
