@@ -61,8 +61,8 @@ if __name__ == "__main__":
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     input_file = os.path.join(script_dir, f"category-{category_name}-info/{category_name}_urls.txt") # Todo: if you want to use a different file, change this path
-    video_folder = os.path.join(script_dir, f"data/{category_name}/videos")
-    audio_folder = os.path.join(script_dir, f"data/{category_name}/audios")
+    video_folder = os.path.join(script_dir, f"data/YouTube-8M-{category_name}/videos")
+    audio_folder = os.path.join(script_dir, f"data/YouTube-8M-{category_name}/audios")
     
     download_videos_audios(input_file, video_folder, audio_folder)
 
