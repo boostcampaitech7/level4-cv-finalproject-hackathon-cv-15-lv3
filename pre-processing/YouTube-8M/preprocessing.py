@@ -4,6 +4,7 @@ import json
 import logging
 import shutil
 import csv
+import argparse
 from scenedetect import detect, ContentDetector, split_video_ffmpeg
 from scenedetect.scene_detector import FlashFilter
 
@@ -58,13 +59,30 @@ def create_clip_videos(input_video_path, output_dir_path, min_scene_len_seconds,
     max_scene_len_frames = int(max_scene_len_seconds * fps)
 
     scene_list = detect(input_video_path, ContentDetector(min_scene_len=min_scene_len_frames, filter_mode=FlashFilter.Mode.MERGE))
-    return filter_long_scenes(scene_list, max_scene_len_frames)
+    return filter_long_scenes(scene_list, max_scene_len_frames), fps
 
 if __name__ == "__main__":
-    root_video_path = "./data/Youtube-8M-Movieclips/videos"
-    root_audio_path = "./data/Youtube-8M-Movieclips/audios"
-    annotation_path = "./data/Youtube-8M-Movieclips/clip_videos/annotations"
+    parser = argparse.ArgumentParser(description="Download videos and audio from YouTube URLs.")
+    parser.add_argument("--category_name", type=str, help="The category name for the videos and audios.")
+    parser.add_argument("--num_videos", type=int, help="The number of videos to process. Default is -1 (process all videos).",default=-1)
+    parser.add_argument("--min_length", type=int, help="The number of videos to process. Default is -1 (process all videos).",default=3)
+    parser.add_argument("--max_length", type=int, help="The number of videos to process. Default is -1 (process all videos).",default=15)
+
+    args = parser.parse_args()
+
+    category_name = args.category_name
+    min_length = args.min_length
+    max_length = args.max_length
+
+    root_video_path = f"./data/YouTube-8M-{category_name}/videos"
+    root_audio_path = f"./data/YouTube-8M-{category_name}/audios"
+    annotation_path = f"./data/YouTube-8M-{category_name}/annotations"
     video_files = sorted(os.listdir(root_video_path))
+
+    if args.num_videos != -1:
+        if args.num_videos < -1:
+            raise ValueError("--num_videos must be -1 (for all videos) or a positive integer.")
+        video_files = video_files[:args.num_videos]
 
     scene_number = 1
     scene_data = []
@@ -74,8 +92,8 @@ if __name__ == "__main__":
         logging.info(f"Processing video ID: {video_id}")
 
         input_video_path = os.path.join(root_video_path, video_file)
-        output_video_dir = os.path.join("./data/Youtube-8M-Movieclips/clip_videos/", video_id)
-        output_audio_dir = os.path.join("./data/Youtube-8M-Movieclips/clip_audios/", video_id)
+        output_video_dir = os.path.join(f"./data/YouTube-8M-{category_name}/clip_videos/", video_id)
+        output_audio_dir = os.path.join(f"./data/YouTube-8M-{category_name}/clip_audios/", video_id)
 
         # Get corresponding audio file
         audio_path = os.path.join(root_audio_path, f"{video_id}.wav")
@@ -84,7 +102,7 @@ if __name__ == "__main__":
             continue
 
         # Detect scenes
-        scene_list = create_clip_videos(input_video_path, output_video_dir, min_scene_len_seconds=5, max_scene_len_seconds=15)
+        scene_list, fps = create_clip_videos(input_video_path, output_video_dir, min_scene_len_seconds=min_length, max_scene_len_seconds=max_length)
 
         # Split the video into clips
         if scene_list:
@@ -113,6 +131,7 @@ if __name__ == "__main__":
                     "audio_path": f"{video_id}/{audio_clip_filename}",
                     "video_id": video_id,
                     "clip_id": f"{scene_number:05}",
+                    "fps": fps,
                     "start_time": start.get_timecode(),
                     "end_time": end.get_timecode(),
                     "start_frame": start.get_frames(),
@@ -126,5 +145,5 @@ if __name__ == "__main__":
             continue
 
     # Save global JSON and CSV
-    save_json(annotation_path, "Movieclips_annotations", scene_data)
-    save_csv(annotation_path, "Movieclips_annotations", scene_data)
+    save_json(annotation_path, f"{category_name}_annotations", scene_data)
+    save_csv(annotation_path, f"{category_name}_annotations", scene_data)
