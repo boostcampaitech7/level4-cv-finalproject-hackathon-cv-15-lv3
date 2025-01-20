@@ -1,6 +1,6 @@
 # 입력/출력 디렉토리 설정
-INPUT_DIR="./data/videos"
-OUTPUT_DIR="./data/audios"
+INPUT_DIR="./data/MSR-VTT/videos"
+OUTPUT_DIR="./data/MSR-VTT/audios"
 
 # 출력 디렉토리 생성
 mkdir -p "$OUTPUT_DIR"
