@@ -5,6 +5,7 @@ import re
 import shutil
 import csv
 import argparse
+import cv2
 
 logging.basicConfig(filename="process.log", level=logging.INFO)
 
