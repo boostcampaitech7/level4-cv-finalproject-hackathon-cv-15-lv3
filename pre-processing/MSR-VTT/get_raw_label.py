@@ -1,21 +1,18 @@
 import os
 import json
 import logging
+import re
 import shutil
 import csv
 import argparse
-import cv2
 
 logging.basicConfig(filename="process.log", level=logging.INFO)
 
 def sorted_num(file_list):
     """Sort filenames numerically based on numbers in the filename."""
-    import re
-
     def extract_number(filename):
         match = re.search(r'\d+', filename)  
         return int(match.group()) if match else float('inf')
-
     return sorted(file_list, key=extract_number)
 
 def save_json(annotation_path, file_name, data):
@@ -87,11 +84,14 @@ if __name__ == "__main__":
             "video_path": f"{video_id}/{video_file}",
             "audio_path": f"{video_id}/{video_id}.wav" if os.path.exists(input_audio_path) else "",
             "video_id": video_id,
+            "clip_id": video_id,  # Use video_id as clip_id
             "fps": fps if fps else 0,
             "start_time": 0,
             "end_time": round(duration, 2),
             "start_frame": 0,
             "end_frame": int(frame_count) if frame_count else 0,
+            "duration_seconds": round(duration, 2),  # Add duration
+            "caption": ""  # Add empty caption
         })
 
     # Save dataset annotations
