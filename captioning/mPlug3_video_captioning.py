@@ -7,6 +7,16 @@ import torch # torch version is  >= 2.1.1, i used '2.5.1+cu118'
 model_path = 'mPLUG/mPLUG-Owl3-7B-240728'
 config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
 
+# Define messages for the model
+messages = [
+    {"role": "user", "content": "<|video|> Describe this video."},
+    {"role": "assistant", "content": ""}
+]
+
+# Video paths
+videos = ['/data/ephemeral/home/clips/Home Alone (1990) - Kevin Escapes Scene (5⧸5) ｜ Movieclips_clips/clip_026.mp4']
+MAX_NUM_FRAMES = 16
+
 # Initialize the model with specific attention implementation
 model = AutoModel.from_pretrained(
     model_path,
@@ -19,16 +29,6 @@ model.eval().cuda()
 # Initialize tokenizer and processor
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 processor = model.init_processor(tokenizer)
-
-# Define messages for the model
-messages = [
-    {"role": "user", "content": "<|video|> Describe this video."},
-    {"role": "assistant", "content": ""}
-]
-
-# Video paths
-videos = ['/data/ephemeral/home/clips/Home Alone (1990) - Kevin Escapes Scene (5⧸5) ｜ Movieclips_clips/clip_026.mp4']
-MAX_NUM_FRAMES = 16
 
 def encode_video(video_path):
     """Encodes video frames for processing."""
