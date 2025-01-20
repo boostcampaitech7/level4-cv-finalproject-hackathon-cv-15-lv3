@@ -1,3 +1,5 @@
+import sys
+
 def generate_youtube_urls(input_file, output_file):
     try:
         # Read the input file
@@ -18,7 +20,11 @@ def generate_youtube_urls(input_file, output_file):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-# Example usage
-input_file = "/Users/imch/workspace/youtube-8m-videos-frames/category-ids/Movieclips_video_id.txt"  # Replace with your input file name
-output_file = "Movieclips_urls.txt"  # Replace with your desired output file name
-generate_youtube_urls(input_file, output_file)
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Usage: python create_url.py <input_file> <output_file>")
+        sys.exit(1)
+    
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+    generate_youtube_urls(input_file, output_file)
