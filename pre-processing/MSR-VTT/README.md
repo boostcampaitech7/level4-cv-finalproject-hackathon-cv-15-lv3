@@ -11,5 +11,5 @@ bash extract_audio.sh
 
 3. Get annotation files (.json)(.csv)
 ```bash
-python get_raw_label.py
+python get_annotations.py
 ```
