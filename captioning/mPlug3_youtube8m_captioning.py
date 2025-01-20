@@ -10,7 +10,7 @@ with open('./Movieclips_annotations.json', 'r') as f:
     data = json.load(f)
 
 # Process only the first 50 entries
-data = data[:50]
+data = data[:10]
 
 # Model and configuration setup
 model_path = 'mPLUG/mPLUG-Owl3-7B-240728'
@@ -54,11 +54,14 @@ def encode_video(video_path):
     print('num frames:', len(frames))
     return frames
 
+prev_caption = ""
+prev_video_id = data[0]['video_id']
+
 # Process each video and generate captions
 for entry in data:
     video_path = os.path.join('../../clip_videos', entry['video_path'])
     video_frames = encode_video(video_path)
-    
+            
     # Ensure that the number of video frames matches the expected number of media items
     if len(video_frames) == 0:
         print(f"No frames extracted for video: {video_path}")
@@ -87,6 +90,11 @@ for entry in data:
 
     # Update the JSON entry with the generated caption
     entry['caption'] = generated_caption
+    
+    # Save Prev Caption in Same Video
+    entry['prev_caption'] = prev_caption if prev_video_id == entry['video_id'] else ""
+    prev_caption = generated_caption 
+    prev_video_id = entry['video_id']
 
 # Save the updated JSON data
 with open('updated_Movieclips_annotations.json', 'w') as f:
