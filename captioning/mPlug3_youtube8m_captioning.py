@@ -1,16 +1,17 @@
 import json
 import os
 from PIL import Image
+from tqdm import tqdm
 from transformers import AutoTokenizer, AutoProcessor, AutoConfig, AutoModel
 from decord import VideoReader, cpu
 import torch
 
 # Load JSON data
-with open('./Movieclips_annotations.json', 'r') as f:
+with open('../json/Movieclips_annotations.json', 'r') as f:
     data = json.load(f)
 
 # Process only the first 50 entries
-data = data[:10]
+# data = data[:10]
 
 # Model and configuration setup
 model_path = 'mPLUG/mPLUG-Owl3-7B-240728'
@@ -58,7 +59,7 @@ prev_caption = ""
 prev_video_id = data[0]['video_id']
 
 # Process each video and generate captions
-for entry in data:
+for entry in tqdm(data, desc="Processing Videos"):
     video_path = os.path.join('../../clip_videos', entry['video_path'])
     video_frames = encode_video(video_path)
             
@@ -97,7 +98,7 @@ for entry in data:
     prev_video_id = entry['video_id']
 
 # Save the updated JSON data
-with open('updated_Movieclips_annotations.json', 'w') as f:
+with open('../json/updated_Movieclips_annotations.json', 'w') as f:
     json.dump(data, f, indent=4)
 
 print("Captions generated and JSON updated for the first 50 videos.")
