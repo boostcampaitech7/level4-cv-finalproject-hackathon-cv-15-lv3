@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoProcessor, AutoConfig, AutoModel
 from decord import VideoReader, cpu
 import torch
 from moviepy import VideoFileClip
-import uuid
+
 
 class VideoCaptioningPipeline:
     def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False):
