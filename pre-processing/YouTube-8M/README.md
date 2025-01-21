@@ -3,7 +3,7 @@
 
 ## 1. YouTube-8M
 
-### Get category infomation 
+### 1-1. Get category infomation 
 
 다음 레포지토리의 작업을 참고하여 작성되었습니다:
 
@@ -29,7 +29,7 @@ category 이름은 [youtube8mcategories.txt](./youtube8mcategories.txt) 에서 �
 bash get_category_ids.sh 10 Movieclips
 ```
 
-### Download raw videos & raw audios
+### 1-2. Download raw videos & raw audios
 
 urls.txt 정보를 활용하여 Youtube에서 해당 url에 해당하는 raw video와 raw audio를 다운로드합니다. 
 코드를 실행하기 전에 *yt-dlp* 를 설치해주세요.
@@ -53,7 +53,7 @@ python download_videos_audios.py --category_name Movieclips
 만약 우리의 코드가 아닌 다른 방법으로 url 텍스트 파일을 얻었다면 [download_vieos_audios.py](./download_videos_audios.py) 코드의 
 *Todo* 부분에서 *input_file* 경로를 변경해주세요. 
 
-### Split videos and audios
+### 1-3. Split videos and audios
 
 PySceneDetect 라이브리러리를 활용해서 video 와 audio를 clip 단위로 분할합니다.
 필요한 인자는 다음과 같습니다
