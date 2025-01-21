@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비디오 검색</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        .search-container { margin-bottom: 20px; }
+        #results { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+        .result-box { border: 2px solid #4CAF50; padding: 15px; max-width: 450px; background-color: #f9f9f9; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="search-container">
+        <h1>🎬 비디오 검색</h1>
+        <input type="text" id="query_text" placeholder="검색어 입력">
+        <select id="mode">
+            <option value="T2V">텍스트 → 비디오</option>
+            <option value="V2T">비디오 → 텍스트</option>
+        </select>
+        <button onclick="search()">검색</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        function search() {
+            let query_text = $("#query_text").val();
+            let mode = $("#mode").val();
+            if (!query_text) {
+                alert("검색어를 입력해주세요!");
+                return;
+            }
+
+            $.ajax({
+                url: "/process",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ query_text, mode }),
+                success: function(response) {
+                    if (response.html) {
+                        $("#results").html(response.html);
+                    } else {
+                        $("#results").html("<p>결과가 없습니다.</p>");
+                    }
+                },
+                error: function() {
+                    alert("검색 중 오류가 발생했습니다.");
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
