@@ -5,8 +5,8 @@ from embedding import FaissSearch, DeepLTranslator
 
 if __name__ == "__main__":
     # 설정 값 직접 입력
-    VIDEOS_DIR = "/path/to/videos"
-    INPUT_JSON = "/path/to/input.json"
+    VIDEOS_DIR = "../../videos"
+    INPUT_JSON = "../video-to-text/input_table.json"
     KEEP_CLIPS = False
 
     # Initialize pipeline
@@ -47,8 +47,8 @@ if __name__ == "__main__":
     DEEPL_API_KEY = "dabf2942-070c-47e2-94e1-b43cbef766e3:fx"
 
     # ✅ FAISS 검색 시스템 및 번역기 초기화
-    json_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/pipeline/combine/output/embedding.json"
-    source_json_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/pipeline/combine/output/captions.json"
+    json_path = "output/embedding.json"
+    source_json_path = "output/captions.json"
 
     translator = DeepLTranslator(api_key=DEEPL_API_KEY)
     faiss_search = FaissSearch(json_path=json_path)

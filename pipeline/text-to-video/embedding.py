@@ -47,7 +47,7 @@ class FaissSearch:
             self._load_json_data()
         else:
             print("📂 JSON 파일이 존재하지 않음. 새로운 임베딩을 생성합니다...")
-            self.generate_and_save_embeddings("/data/ephemeral/home/embedding/updated_Movieclips_annotations.json")
+            self.generate_and_save_embeddings("output/captions.json")
             self._load_json_data()
 
         # ✅ FAISS 인덱스 초기화
