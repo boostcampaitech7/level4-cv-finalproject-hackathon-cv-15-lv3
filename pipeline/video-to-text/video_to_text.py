@@ -68,7 +68,7 @@ class VideoCaptioningPipeline:
     def _generate_caption(self, video_frames):
         """Generate caption for video frames"""
         messages = [
-            {"role": "user", "content": "<|video|> Describe this video in detail."},
+            {"role": "user", "content": "<|video|> Carefully analyze the entire video and generate a detailed yet concise caption that captures the overarching context, key events, and interactions observed throughout. Include descriptions of the setting, characters, actions, and any transitions or changes in the scene. Focus on providing a holistic summary that conveys the main idea or narrative of the video, ensuring that all information is grounded in what is explicitly shown, with no added assumptions or fabricated details."},
             {"role": "assistant", "content": ""}
         ]
         
@@ -76,7 +76,7 @@ class VideoCaptioningPipeline:
         inputs.to('cuda')
         inputs.update({
             'tokenizer': self.tokenizer,
-            'max_new_tokens': 100,
+            'max_new_tokens': 200,
             'decode_text': True,
         })
         
