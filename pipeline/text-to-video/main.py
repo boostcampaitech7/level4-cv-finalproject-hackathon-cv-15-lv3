@@ -1,46 +1,47 @@
-import json
+import os
+import shutil
 from video_captioning import VideoCaptioningPipeline, find_video_file
 from embedding import FaissSearch, DeepLTranslator
+from moviepy import VideoFileClip
 
+def save_search_result_clip(video_path, start_time, end_time, output_dir, clip_name):
+    """검색 결과 클립을 저장"""
+    os.makedirs(output_dir, exist_ok=True)
+    
+    try:
+        # 비디오에서 클립 추출
+        clip = VideoFileClip(video_path).subclipped(start_time, end_time)
+        output_path = os.path.join(output_dir, f"{clip_name}.mp4")
+        
+        # 클립 저장
+        clip.write_videofile(output_path, codec='libx264', audio=False)
+        clip.close()
+        
+        print(f"✅ 검색 결과 클립 저장 완료: {output_path}")
+        return output_path
+        
+    except Exception as e:
+        print(f"❌ 클립 저장 중 오류 발생: {str(e)}")
+        return None
 
 if __name__ == "__main__":
     # 설정 값 직접 입력
     VIDEOS_DIR = "../../videos"
-    INPUT_JSON = "../video-to-text/input_table.json"
     KEEP_CLIPS = False
+    SEGMENT_DURATION = 5
 
     # Initialize pipeline
-    pipeline = VideoCaptioningPipeline(keep_clips=KEEP_CLIPS)
+    pipeline = VideoCaptioningPipeline(
+        keep_clips=KEEP_CLIPS,
+        segment_duration=SEGMENT_DURATION
+    )
     
-    # Load segments from JSON
-    with open(INPUT_JSON, 'r') as f:
-        input_data = json.load(f)
+    # Process all videos in directory
+    results = pipeline.process_directory(VIDEOS_DIR)
     
-    # Create video list from all videos and their segments
-    video_list = []
-    for video_data in input_data['videos']:
-        video_path = find_video_file(VIDEOS_DIR, video_data['video_name'])
-        
-        # Verify video exists
-        if not video_path:
-            print(f"Warning: Video not found: {video_data['video_name']}")
-            continue
-        
-        # Add all segments for this video
-        video_list.extend([
-            (video_path, seg['start'], seg['end'])
-            for seg in video_data['segments']
-        ])
-    
-    if not video_list:
-        print("Error: No valid videos found to process")
-        exit(1)
-    
-    # Process videos
-    results = pipeline.process_videos(video_list)
-    
-    # Save results
-    pipeline.save_results(results)
+    if results:
+        # Save results
+        pipeline.save_results(results)
     # -----------------------------------------------------------------------------------
 
     # ✅ DeepL API 키 설정
@@ -57,11 +58,27 @@ if __name__ == "__main__":
     faiss_search.generate_and_save_embeddings(source_json_path)
 
     # ✅ 검색 실행 (한국어 입력)
-    query_text = "여성이 그룹에서 카메라를 보고 이야기하고 있다."
+    query_text = "남자 얼굴 위에 거미가 올라가서 남자가 놀라는 장면"
     similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=1)
 
-    # ✅ 결과 출력
-    for i, (caption, similarity) in enumerate(similar_captions):
-        print(f"🔹 유사도 {i+1}: {similarity:.4f} (코사인 유사도 기반)")
-        print(f"   캡션: {caption}\n")
+    # ✅ 검색 결과 출력 및 클립 저장
+    search_results_dir = "output/search_results"
+    
+    for i, (caption, similarity, video_info) in enumerate(similar_captions):
+        print(f"\n🎯 검색 결과 {i+1}")
+        print(f"📊 유사도: {similarity:.4f}")
+        print(f"🎬 비디오: {os.path.basename(video_info['video_path'])}")
+        print(f"⏰ 구간: {video_info['start_time']}초 ~ {video_info['end_time']}초")
+        print(f"🎯 클립 ID: {video_info['clip_id']}")
+        print(f"📝 캡션: {caption}")
+        
+        # 검색 결과 클립 저장
+        clip_name = f"search_result_{i+1}_{video_info['clip_id']}"
+        saved_path = save_search_result_clip(
+            video_info['video_path'],
+            video_info['start_time'],
+            video_info['end_time'],
+            search_results_dir,
+            clip_name
+        )
 

@@ -101,6 +101,17 @@ class FaissSearch:
         faiss.normalize_L2(query_embedding)
 
         D, I = self.gpu_index.search(query_embedding, top_k)
-        results = [(translator.translate_en_to_ko(self.captions[i]), D[0][idx]) for idx, i in enumerate(I[0])]
+        
+        results = []
+        for idx, i in enumerate(I[0]):
+            caption_ko = translator.translate_en_to_ko(self.captions[i])
+            video_info = {
+                'video_path': self.data[i]['video_path'],
+                'video_id': self.data[i]['video_id'],
+                'clip_id': self.data[i]['clip_id'],
+                'start_time': self.data[i]['start_time'],
+                'end_time': self.data[i]['end_time']
+            }
+            results.append((caption_ko, D[0][idx], video_info))
 
         return results
