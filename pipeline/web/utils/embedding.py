@@ -7,6 +7,7 @@ import requests
 from sentence_transformers import SentenceTransformer
 from functools import lru_cache
 
+# 25. 1. 22. get_cached_model 구현
 # ✅ 모델을 미리 로드하여 캐싱
 @lru_cache(maxsize=1)
 def get_cached_model(model_name="all-MiniLM-L6-v2"):
@@ -30,7 +31,7 @@ class FaissSearch:
             self._load_json_data()
         else:
             print("📂 JSON 파일이 존재하지 않음. 새로운 임베딩을 생성합니다...")
-            self.generate_and_save_embeddings("output/captions.json")
+            self.generate_and_save_embeddings("output/text2video/t2v_captions.json")
             self._load_json_data()
         print(f"🕒 JSON 데이터 로드 완료: {time.time() - start_time:.4f} 초")
 

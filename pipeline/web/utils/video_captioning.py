@@ -1,14 +1,15 @@
 import os
 import json
+import torch
 from PIL import Image
 from transformers import AutoTokenizer, AutoProcessor, AutoConfig, AutoModel
 from decord import VideoReader, cpu
 from moviepy import VideoFileClip
-import torch
+from utils.translate import DeepLTranslator, Translator, ParallelTranslator, DeepGoogleTranslator
 
 
 class VideoCaptioningPipeline:
-    def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False, segment_duration=5):
+    def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False, segment_duration=5, mode='text2video', translator=DeepGoogleTranslator()):
         # Model initialization
         self.config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         self.model = AutoModel.from_pretrained(
@@ -26,9 +27,10 @@ class VideoCaptioningPipeline:
         self.keep_clips = keep_clips
         self.segment_duration = segment_duration
 
-        # Create output and clips directories if they don't exist
-        self.output_dir = "output"
-        self.clips_dir = "clips"
+        # Create output and clips directories with mode-specific paths
+        self.mode = mode
+        self.output_dir = f"output/{mode}"
+        self.clips_dir = f"clips/{mode}"
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.clips_dir, exist_ok=True)
 
@@ -40,11 +42,18 @@ class VideoCaptioningPipeline:
         self.clip_counter = 1
         self.video_name_to_id = {}
 
-    def _extract_clip(self, video_path, start_time, end_time):
+        # Initialize translator
+        self.translator = translator
+# /data/ephemeral/home/jiwan/level4-cv-finalproject-hackathon-cv-15-lv3/pipeline/web/static/search_results/v2t
+    # 22. 1. 22. flag 추가
+    def _extract_clip(self, video_path, start_time, end_time, flag=False):
         """Extract clip from video using timestamp"""
         clip = VideoFileClip(video_path).subclipped(start_time, end_time)
         clip_name = f"{os.path.basename(video_path).rsplit('.', 1)[0]}_clip{self.clip_counter}.mp4"
-        clip_path = os.path.join(self.clips_dir, clip_name)
+        if flag:
+            clip_path = f"static/search_results/v2t/{os.path.basename(video_path).rsplit('.', 1)[0]}_clip{self.clip_counter}.mp4"
+        else:
+            clip_path = os.path.join(self.clips_dir, clip_name)
         clip.write_videofile(clip_path, codec='libx264', audio=False)
         clip.close()
         return clip_path
@@ -68,7 +77,7 @@ class VideoCaptioningPipeline:
     def _generate_caption(self, video_frames):
         """Generate caption for video frames"""
         messages = [
-            {"role": "user", "content": "<|video|> Carefully analyze the entire video and generate a detailed yet concise caption that captures the overarching context, key events, and interactions observed throughout. Include descriptions of the setting, characters, actions, and any transitions or changes in the scene. Focus on providing a holistic summary that conveys the main idea or narrative of the video, ensuring that all information is grounded in what is explicitly shown, with no added assumptions or fabricated details."},
+            {"role": "user", "content": "<|video|> Describe this video in detail."},
             {"role": "assistant", "content": ""}
         ]
 
@@ -81,8 +90,8 @@ class VideoCaptioningPipeline:
         })
 
         return self.model.generate(**inputs)[0]
-
-    def process_videos(self, video_list):
+    # 25. 1. 22. flag 추가
+    def process_videos(self, video_list, flag=False):
         """Process list of videos and generate captions"""
         results = []
 
@@ -100,12 +109,18 @@ class VideoCaptioningPipeline:
             clip_id = f"clip{self.clip_counter}"
 
             # Extract clip
-            clip_path = self._extract_clip(video_path, start_time, end_time)
+            clip_path = self._extract_clip(video_path, start_time, end_time, flag)
 
             try:
                 # Encode and generate caption
                 video_frames = self._encode_video(clip_path)
                 caption = self._generate_caption(video_frames)
+                
+                # video2text 모드일 때만 한글 번역 추가
+                if self.mode == "video2text":
+                    caption_ko = self.translator.translate_en_to_ko(caption)
+                else:
+                    caption_ko = None
 
                 # Add clip info to mapping with clip path
                 self.video_mapping[video_id]["clips"].append({
@@ -124,6 +139,11 @@ class VideoCaptioningPipeline:
                     "end_time": end_time,
                     "caption": caption
                 }
+                
+                # video2text 모드일 때만 한글 캡션 추가
+                if caption_ko:
+                    entry["caption_ko"] = caption_ko
+                
                 self.clip_counter += 1
                 results.append(entry)
 
@@ -180,16 +200,24 @@ class VideoCaptioningPipeline:
         return self.process_videos(video_list)
 
     def save_results(self, results):
-        """Save results to JSON files in output directory"""
-        # Save results
-        output_path = os.path.join(self.output_dir, "captions.json")
-        with open(output_path, 'w') as f:
-            json.dump(results, indent=4, fp=f)
+        """Save results to JSON files in mode-specific output directory"""
+        # Save results with mode-specific names
+        if self.mode == "video2text":
+            captions_file = "v2t_captions.json"
+            mapping_file = "v2t_mapping.json"
+        else:  # text2video
+            captions_file = "t2v_captions.json"
+            mapping_file = "t2v_mapping.json"
+
+        # Save captions
+        output_path = os.path.join(self.output_dir, captions_file)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(results, indent=4, ensure_ascii=False, fp=f)
 
         # Save video mapping
-        mapping_path = os.path.join(self.output_dir, "captions_mapping.json")
-        with open(mapping_path, 'w') as f:
-            json.dump(self.video_mapping, indent=4, fp=f)
+        mapping_path = os.path.join(self.output_dir, mapping_file)
+        with open(mapping_path, 'w', encoding='utf-8') as f:
+            json.dump(self.video_mapping, indent=4, ensure_ascii=False, fp=f)
 
 
 def find_video_file(videos_dir, video_name):

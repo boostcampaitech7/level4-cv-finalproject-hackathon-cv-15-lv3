@@ -5,27 +5,30 @@ from utils.video_captioning import VideoCaptioningPipeline, find_video_file
 from utils.embedding import FaissSearch, get_cached_model
 from utils.translate import DeepLTranslator, Translator, ParallelTranslator, DeepGoogleTranslator
 from sentence_transformers import SentenceTransformer
+import json
 
 app = Flask(__name__)
 
 # Directory for storing search result video clips
-STATIC_VIDEO_DIR = "static/search_results"
+STATIC_VIDEO_DIR = "static/search_results/t2v"
 os.makedirs(STATIC_VIDEO_DIR, exist_ok=True)  # Ensure the directory exists
+STATIC_VIDEO_DIR_v2t = "static/search_results/v2t"
+os.makedirs(STATIC_VIDEO_DIR_v2t, exist_ok=True)  # Ensure the directory exists
 
 # FAISS and DeepL API settings
-VIDEOS_DIR = "./vidoes"
+VIDEOS_DIR = "./videos"
 KEEP_CLIPS = False
 SEGMENT_DURATION = 5
 DEEPL_API_KEY = "dabf2942-070c-47e2-94e1-b43cbef766e3:fx"
-JSON_PATH = "output/embedding.json"
-SOURCE_JSON_PATH = "output/captions.json"
+JSON_PATH = "output/text2video/t2v_embedding.json"
+SOURCE_JSON_PATH = "output/text2video/t2v_captions.json"
 VideoCaptioning_flag = False # True일 때 captioning 진행 (영상 한개 4분)
 translator_mode = 'google' # deepl, translate, batch-deepl, batch-translate, google
 max_workers = 4 # 번역 배치 크기
 
-if not VideoCaptioning_flag:
-    # ✅ 모델을 앱 시작 시 한 번만 로드
-    faiss_search = FaissSearch(json_path=JSON_PATH)
+# if not VideoCaptioning_flag:
+#     # ✅ 모델을 앱 시작 시 한 번만 로드
+#     faiss_search = FaissSearch(json_path=JSON_PATH)
 
 def save_search_result_clip(video_path, start_time, end_time, clip_name):
     """Saves a video clip from the original video"""
@@ -55,11 +58,7 @@ def process():
     global faiss_search
     """Process search request"""
     data = request.json
-    query_text = data.get("query_text")
     mode = data.get("mode")
-
-    if not query_text:
-        return jsonify({"error": "No text provided"}), 400
 
     if mode not in ["V2T", "T2V"]:
         return jsonify({"error": "Invalid mode"}), 400
@@ -75,6 +74,10 @@ def process():
         faiss_search = FaissSearch(json_path=JSON_PATH)
 
     if mode == "T2V":
+        query_text = data.get("query_text")
+        if not query_text:
+            return jsonify({"error": "No text provided"}), 400
+
         # ✅ 번역기 선택 (translator_mode 기반)
         if translator_mode == "deepl":
             translator = DeepLTranslator(api_key=DEEPL_API_KEY)
@@ -96,18 +99,6 @@ def process():
         # ✅ FAISS 검색 수행
         similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=2)
         total_clips = len(similar_captions)  # 전체 클립 개수 계산
-
-        output = []
-
-        for i, (caption, similarity, video_info) in enumerate(similar_captions):
-            clip_name = f"search_result_{i+1}_{video_info['clip_id']}"
-            saved_path = save_search_result_clip(
-                video_info["video_path"],
-                video_info["start_time"],
-                video_info["end_time"],
-                clip_name
-            )
-
 
         results_html = """
         <h2 style='text-align: center; margin-bottom: 20px;'>🔍 검색 결과</h2><br><br>
@@ -161,6 +152,98 @@ def process():
 
         results_html += "</div>"
         return jsonify({"message": "T2V processing complete", "results": output, "html": results_html})
+    elif mode == "V2T":
+        video_segments = data.get("video_segments", [])
+
+        if not video_segments or not isinstance(video_segments, list):
+            return jsonify({"error": "Invalid video segment data"}), 400
+
+        # 파이프라인 초기화
+        pipeline = VideoCaptioningPipeline(
+            keep_clips=True,
+            mode="video2text"
+        )
+
+        output = []
+        video_process_input = []  # pipeline.process_videos()를 위한 리스트
+
+        for segment in video_segments:
+            video_id = segment.get("video_id")
+            start_time = segment.get("start_time")
+            end_time = segment.get("end_time")
+
+            if not video_id or not start_time or not end_time:
+                return jsonify({"error": "Missing video segment data"}), 400
+
+            # 원본 비디오 경로
+            original_video_path = f"/data/ephemeral/home/jiwan/level4-cv-finalproject-hackathon-cv-15-lv3/pipeline/web/videos/{video_id}.mp4"
+
+            # pipeline 처리용 데이터 추가
+            video_process_input.append((original_video_path, start_time, end_time))
+
+
+        # 📌 비디오 처리 실행 (JSON 생성 전에 실행해야 함)
+        flag_v2t = True
+        results = pipeline.process_videos(video_process_input, flag_v2t)
+        pipeline.save_results(results)  # ./output/video2text/v2t_captions.json 생성됨
+
+
+        caption_ko_map = {}
+
+        try:
+            with open("./output/video2text/v2t_captions.json", "r", encoding="utf-8") as f:
+                v2t_captions = json.load(f)
+
+            # ✅ clip_id 기준으로 caption_ko 매핑
+            caption_ko_map = {
+                item['clip_id']: item.get("caption_ko", "한국어 자막 없음") for item in v2t_captions
+            }
+
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"⚠️ JSON 파일 로드 오류: {e}")
+            return jsonify({"error": "Failed to load caption JSON"}), 500
+
+        # print("Caption KO Map:", caption_ko_map)  # 디버깅용 출력
+
+        # ✅ output 리스트 구성 (clip_id는 JSON에서 가져옴)
+        output = []
+        for item in v2t_captions:
+            output.append({
+                "clip_id": item["clip_id"],  # pipeline에서 자동 생성된 clip_id 사용
+                "video_id": item.get("video_id", "unknown_video"),
+                "start_time": item.get("start_time"),
+                "end_time": item.get("end_time"),
+                "caption_ko": caption_ko_map.get(item["clip_id"], "한국어 자막 없음"),
+                "clip_path": f"static/search_results/v2t/{video_id}_{item['clip_id']}.mp4"
+            })
+
+        for item in output:
+            print(item['clip_path'])  # 모든 클립 출력
+
+        # ✅ HTML 출력 생성
+        results_html = """
+        <h2 style='text-align: center; margin-bottom: 20px;'>🎥 V2T 검색 결과</h2><br><br>
+        <div style='display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;'>
+        """
+
+        for item in output:
+            result_text = f"""
+            <div style="border: 2px solid #4CAF50; padding: 15px; max-width: 450px; background-color: #f9f9f9; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; min-height: 400px;">
+                <div style="flex-grow: 1; text-align: left; width: 100%;">
+                    <h3 style="color: #4CAF50; text-align: left;">🎬 클립 정보</h3>
+                    <p><strong>📌 클립 ID:</strong> {item["clip_id"]}</p>
+                    <p><strong>⏰ 구간:</strong> {item["start_time"]}초 ~ {item["end_time"]}초</p>
+                    <p><strong>🇰🇷 한국어 캡션:</strong> {item["caption_ko"]}</p>
+                </div>
+                {f"<video width='100%' controls style='border-radius: 10px; margin-top: 10px;'><source src='{item['clip_path']}' type='video/mp4'>Your browser does not support the video tag.</video>" if item['clip_path'] else "<p style='color: red;'>⚠️ 비디오 저장 오류</p>"}
+            </div>
+            """
+            results_html += result_text
+
+        results_html += "</div>"
+
+        return jsonify({"message": "V2T processing complete", "results": output, "html": results_html})
+
 
     return jsonify({"message": "V2T processing complete"})
 
