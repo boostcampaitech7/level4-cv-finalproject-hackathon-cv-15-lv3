@@ -5,7 +5,7 @@ from PIL import Image
 from transformers import AutoTokenizer, AutoProcessor, AutoConfig, AutoModel
 from decord import VideoReader, cpu
 from moviepy import VideoFileClip
-from utils.translator import DeepLTranslator
+from utils.translator import DeepLTranslator, DeepGoogleTranslator
 
 
 class VideoCaptioningPipeline:
@@ -43,7 +43,7 @@ class VideoCaptioningPipeline:
         self.video_name_to_id = {}
 
         # Initialize translator
-        self.translator = DeepLTranslator()
+        self.translator = DeepGoogleTranslator()
 
 
     def _extract_clip(self, video_path, start_time, end_time):
@@ -82,7 +82,7 @@ class VideoCaptioningPipeline:
         inputs.to('cuda')
         inputs.update({
             'tokenizer': self.tokenizer,
-            'max_new_tokens': 100,
+            'max_new_tokens': 200,
             'decode_text': True,
         })
 

@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 from moviepy import VideoFileClip
-from utils.translator import DeepLTranslator
+from utils.translator import DeepLTranslator, DeepGoogleTranslator
 from video_to_text.video_captioning import VideoCaptioningPipeline
 from text_to_video.embedding import FaissSearch
 
