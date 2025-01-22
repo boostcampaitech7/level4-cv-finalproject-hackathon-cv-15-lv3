@@ -45,6 +45,6 @@ def download_videos_and_audio(file_path, video_folder="video", audio_folder="aud
 
 # Example usage
 input_file = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/movie_urls.txt"  # Replace with the name of your URL file
-video_folder = "video"  # Folder to store videos
-audio_folder = "audio"  # Folder to store audio files
+video_folder = "videos"  # Folder to store videos
+audio_folder = "audios"  # Folder to store audio files
 download_videos_and_audio(input_file, video_folder, audio_folder)
