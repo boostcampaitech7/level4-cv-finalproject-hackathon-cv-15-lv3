@@ -1,7 +1,7 @@
 import os
 import shutil
 from video_captioning import VideoCaptioningPipeline, find_video_file
-from embedding import FaissSearch, DeepLTranslator
+from embedding import FaissSearch
 from moviepy import VideoFileClip
 
 def save_search_result_clip(video_path, start_time, end_time, output_dir, clip_name):
@@ -31,17 +31,17 @@ if __name__ == "__main__":
     SEGMENT_DURATION = 5
 
     # Initialize pipeline
-    pipeline = VideoCaptioningPipeline(
-        keep_clips=KEEP_CLIPS,
-        segment_duration=SEGMENT_DURATION
-    )
+    # pipeline = VideoCaptioningPipeline(
+    #     keep_clips=KEEP_CLIPS,
+    #     segment_duration=SEGMENT_DURATION
+    # )
     
-    # Process all videos in directory
-    results = pipeline.process_directory(VIDEOS_DIR)
+    # # Process all videos in directory
+    # results = pipeline.process_directory(VIDEOS_DIR)
     
-    if results:
-        # Save results
-        pipeline.save_results(results)
+    # if results:
+    #     # Save results
+    #     pipeline.save_results(results)
     # -----------------------------------------------------------------------------------
 
     # ✅ DeepL API 키 설정
