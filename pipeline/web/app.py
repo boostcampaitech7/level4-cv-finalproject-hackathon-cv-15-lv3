@@ -2,8 +2,10 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
 from moviepy import VideoFileClip
 from utils.video_captioning import VideoCaptioningPipeline, find_video_file
-from utils.embedding import FaissSearch
+from utils.embedding import FaissSearch, get_cached_model
 from utils.translate import DeepLTranslator, Translator, ParallelTranslator, DeepGoogleTranslator
+from sentence_transformers import SentenceTransformer
+
 app = Flask(__name__)
 
 # Directory for storing search result video clips
@@ -20,6 +22,10 @@ SOURCE_JSON_PATH = "output/captions.json"
 VideoCaptioning_flag = False # True일 때 captioning 진행 (영상 한개 4분)
 translator_mode = 'google' # deepl, translate, batch-deepl, batch-translate, google
 max_workers = 4 # 번역 배치 크기
+
+if not VideoCaptioning_flag:
+    # ✅ 모델을 앱 시작 시 한 번만 로드
+    faiss_search = FaissSearch(json_path=JSON_PATH)
 
 def save_search_result_clip(video_path, start_time, end_time, clip_name):
     """Saves a video clip from the original video"""
@@ -46,6 +52,7 @@ def index():
 
 @app.route('/process', methods=['POST'])
 def process():
+    global faiss_search
     """Process search request"""
     data = request.json
     query_text = data.get("query_text")
@@ -64,6 +71,9 @@ def process():
         if results:
             pipeline.save_results(results)
 
+        # ✅ 모델을 앱 시작 시 한 번만 로드
+        faiss_search = FaissSearch(json_path=JSON_PATH)
+
     if mode == "T2V":
         # ✅ 번역기 선택 (translator_mode 기반)
         if translator_mode == "deepl":
@@ -80,7 +90,7 @@ def process():
             raise ValueError(f"🚨 지원되지 않는 translator_mode: {translator_mode}")
 
         # ✅ FAISS 검색 객체 생성 및 임베딩 저장
-        faiss_search = FaissSearch(json_path=JSON_PATH)
+        #  faiss_search = FaissSearch(json_path=JSON_PATH)
         faiss_search.generate_and_save_embeddings(SOURCE_JSON_PATH)
 
         # ✅ FAISS 검색 수행

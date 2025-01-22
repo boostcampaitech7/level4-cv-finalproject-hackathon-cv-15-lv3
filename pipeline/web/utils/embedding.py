@@ -5,14 +5,25 @@ import time
 import numpy as np
 import requests
 from sentence_transformers import SentenceTransformer
+from functools import lru_cache
+
+# ✅ 모델을 미리 로드하여 캐싱
+@lru_cache(maxsize=1)
+def get_cached_model(model_name="all-MiniLM-L6-v2"):
+    print("🔄 모델을 로드 중...")
+    start_time = time.time()
+    model = SentenceTransformer(model_name)
+    print(f"✅ 모델 로드 완료! (소요 시간: {time.time() - start_time:.4f} 초)")
+    return model
 
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
 
     def __init__(self, json_path, model_name="all-MiniLM-L6-v2", use_gpu=True):
+        start_time = time.time()
         self.json_path = json_path
-        self.model = SentenceTransformer(model_name)
-
+        self.model = get_cached_model()  # ✅ 캐싱된 모델 사용
+        print(f"🕒 model load: {time.time() - start_time:.4f} 초")
         # ✅ JSON 데이터 로드 또는 생성
         start_time = time.time()
         if os.path.exists(self.json_path):
