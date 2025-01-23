@@ -7,9 +7,10 @@ from decord import VideoReader, cpu
 from moviepy import VideoFileClip
 from utils.translate import DeepLTranslator, Translator, ParallelTranslator, DeepGoogleTranslator
 
-
+# mPLUG/mPLUG-Owl3-7B-240728
+# mPLUG/mPLUG-Owl3-7B-241101
 class VideoCaptioningPipeline:
-    def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False, segment_duration=5, mode='text2video', translator=DeepGoogleTranslator()):
+    def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-241101', keep_clips=False, segment_duration=5, mode='text2video', translator=DeepGoogleTranslator()):
         # Model initialization
         self.config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         self.model = AutoModel.from_pretrained(
