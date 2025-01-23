@@ -1,0 +1,5 @@
+- 준비
+    - ./videos 폴더 생성 후 비디오 저장
+    - app.py에 경로 확인하기 19~27줄
+    - 100줄 top_k에 따라 출력 개수 설정
+    - sh requirement.sh

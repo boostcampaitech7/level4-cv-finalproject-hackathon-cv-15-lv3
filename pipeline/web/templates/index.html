@@ -10,10 +10,10 @@
         .search-container { margin-bottom: 20px; }
         #results { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
         .result-box { border: 2px solid #4CAF50; padding: 15px; max-width: 450px; background-color: #f9f9f9; border-radius: 10px; }
+        .extra-inputs { display: none; margin-top: 10px; }
     </style>
 </head>
 <body>
-
     <div class="search-container">
         <h1>🎬 비디오 검색</h1>
         <input type="text" id="query_text" placeholder="검색어 입력">
@@ -21,25 +21,89 @@
             <option value="T2V">텍스트 → 비디오</option>
             <option value="V2T">비디오 → 텍스트</option>
         </select>
+        <div class="extra-inputs" id="extra-inputs">
+            <div id="segment-container">
+                <div class="segment-group">
+                    <input type="text" class="video_id" placeholder="비디오 ID 입력">
+                    <input type="text" class="start_time" placeholder="시작 시간 입력">
+                    <input type="text" class="end_time" placeholder="종료 시간 입력">
+                    <button type="button" class="remove-segment" onclick="removeSegment(this)">삭제</button>
+                </div>
+            </div>
+            <button type="button" id="add-segment">+ 추가</button>
+        </div>
         <button onclick="search()">검색</button>
     </div>
-
     <div id="results"></div>
 
     <script>
+        $(document).ready(function() {
+            $("#mode").change(function() {
+                if ($(this).val() === "V2T") {
+                    $("#query_text").hide();
+                    $("#extra-inputs").show();
+                } else {
+                    $("#query_text").show();
+                    $("#extra-inputs").hide();
+                }
+            });
+
+            $("#add-segment").click(function() {
+                let segmentHtml = `
+                    <div class="segment-group">
+                        <input type="text" class="video_id" placeholder="비디오 ID 입력">
+                        <input type="text" class="start_time" placeholder="시작 시간 입력">
+                        <input type="text" class="end_time" placeholder="종료 시간 입력">
+                        <button type="button" class="remove-segment" onclick="removeSegment(this)">삭제</button>
+                    </div>
+                `;
+                $("#segment-container").append(segmentHtml);
+            });
+        });
+
+        function removeSegment(button) {
+            $(button).closest(".segment-group").remove();
+        }
+
         function search() {
-            let query_text = $("#query_text").val();
             let mode = $("#mode").val();
-            if (!query_text) {
-                alert("검색어를 입력해주세요!");
-                return;
+            let data = { mode };
+
+            if (mode === "T2V") {
+                let query_text = $("#query_text").val();
+                if (!query_text) {
+                    alert("검색어를 입력해주세요!");
+                    return;
+                }
+                data.query_text = query_text;
+            } else {
+                let video_segments = [];
+                $(".segment-group").each(function() {
+                    let video_id = $(this).find(".video_id").val();
+                    let start_time = $(this).find(".start_time").val();
+                    let end_time = $(this).find(".end_time").val();
+
+                    if (video_id && start_time && end_time) {
+                        video_segments.push({
+                            video_id: video_id,
+                            start_time: start_time,
+                            end_time: end_time
+                        });
+                    }
+                });
+
+                if (video_segments.length === 0) {
+                    alert("비디오 ID, 시작 시간, 종료 시간을 입력해주세요!");
+                    return;
+                }
+                data.video_segments = video_segments;
             }
 
             $.ajax({
                 url: "/process",
                 type: "POST",
                 contentType: "application/json",
-                data: JSON.stringify({ query_text, mode }),
+                data: JSON.stringify(data),
                 success: function(response) {
                     if (response.html) {
                         $("#results").html(response.html);
@@ -53,6 +117,5 @@
             });
         }
     </script>
-
 </body>
 </html>
