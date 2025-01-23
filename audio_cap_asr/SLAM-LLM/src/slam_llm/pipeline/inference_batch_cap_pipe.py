@@ -119,7 +119,7 @@ def main(kwargs: DictConfig):
         for key, text in zip(batch["keys"], output_text):
             if key not in decode_log_data:
                 decode_log_data[key] = {}
-            decode_log_data[key]["ASR"] = text.replace("\n", " ")
+            decode_log_data[key]["CAP"] = text.replace("\n", " ")
 
     # Save updated decode_log
     with open(decode_log_path, "w") as json_file:

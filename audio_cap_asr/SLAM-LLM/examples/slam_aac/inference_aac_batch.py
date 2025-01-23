@@ -1,4 +1,4 @@
-from slam_llm.pipeline.inference_batch import main as inference
+from slam_llm.pipeline.inference_batch_cap_pipe import main as inference
 
 import hydra
 import logging

@@ -2,7 +2,7 @@
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 
-run_dir=/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/SLAM_LLM/SLAM-LLM ###
+run_dir=/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/audio_cap_asr/SLAM-LLM ###
 cd $run_dir
 code_dir=examples/slam_aac
 
@@ -12,9 +12,9 @@ llm_path=/data/ephemeral/home/min/SLAM_model/vicuna-7b-v1.5 ###
 encoder_projector_ds_rate=5
 num_beams=4
 
-inference_data_path=/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/SLAM_LLM/test_data.jsonl ###
+inference_data_path=/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/audio_cap_asr/test_data.jsonl ###
 output_dir=/data/ephemeral/home/min/SLAM_model/caption/audiocaps_finetune ###
-decode_log=$output_dir/decode_beam${num_beams}
+decode_log=/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/audio_cap_asr/output/output.json
 
 
 # -m debugpy --listen 5678 --wait-for-client
