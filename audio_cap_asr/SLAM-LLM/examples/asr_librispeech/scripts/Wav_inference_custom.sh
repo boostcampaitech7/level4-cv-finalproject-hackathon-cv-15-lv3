@@ -4,21 +4,21 @@ export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
-run_dir=/data/ephemeral/home/SLAM-LLM
+run_dir=/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/SLAM_LLM/SLAM-LLM
 cd $run_dir
-code_dir=/data/ephemeral/home/SLAM-LLM/examples/asr_librispeech
+code_dir=/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/SLAM_LLM/SLAM-LLM/examples/asr_librispeech
 
-speech_encoder_path=/data/ephemeral/home/SLAM_model/WavLM-Large.pt
-llm_path=/data/ephemeral/home/SLAM_model/vicuna-7b-v1.5
+speech_encoder_path=/data/ephemeral/home/min/SLAM_model/asr/WavLM-Large.pt
+llm_path=/data/ephemeral/home/min/SLAM_model/vicuna-7b-v1.5
 
 #projector_ckpt_path=/data/ephemeral/home/SLAM_model/model.pt
 
 
-output_dir=/data/ephemeral/home/SLAM_model
+output_dir=/data/ephemeral/home/min/SLAM_model/asr
 ckpt_path=$output_dir/Linear
 split=librispeech_test_clean
-val_data_path=/data/ephemeral/home/SLAM-LLM/examples/asr_librispeech/test_data.jsonl
-decode_log=$ckpt_path/decode_${split}_beam4
+val_data_path=/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/SLAM_LLM/test_data.jsonl
+decode_log=/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/SLAM_LLM/output/output.json
 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_asr_batch.py \

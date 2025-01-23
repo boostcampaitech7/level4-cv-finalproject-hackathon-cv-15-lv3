@@ -1,0 +1,10 @@
+
+LLM 다운: https://huggingface.co/lmsys/vicuna-7b-v1.5
+
+asr : https://github.com/X-LANCE/SLAM-LLM/tree/main/examples/asr_librispeech
+인코더 다운: https://drive.google.com/file/d/12-cB34qCTvByWT-QtOcZaqwwO21FLSqU/view
+프로젝터 다운: https://drive.google.com/file/d/1cLNuMR05oXxKj8M_Z3yAZ5JHJ06ybIHp/view
+
+captioning: https://github.com/X-LANCE/SLAM-LLM/blob/main/examples/slam_aac
+Audio Encoder: https://drive.google.com/file/d/1aCYiQmoZv_Gh1FxnR-CCWpNAp6DIJzn6/view
+Audiocaps_fineune: https://drive.google.com/drive/folders/1GhFPiSVmBE9BvBhYWCEqkFuH-avKl-4g
