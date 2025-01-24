@@ -1,0 +1,34 @@
+{
+    "run_cfg": {
+        "default": "./config/vast/default_run_cfg.json",
+        "output_dir": "./output/inference",
+        "input_json": "datasets/Movieclips_50/annotations/Movieclips_50_annotations.json",
+        "vast_json": "datasets/annotations/custom/custom_annotations.json"
+    },
+    
+    "model_cfg": {
+        "default": "./config/vast/default_model_cfg.json"
+    },
+
+    "data_cfg": {
+        "train": [],
+        
+        "val": [{
+            "type": "annoindexed",
+            "training": false,
+            "name": "movieclips50_cap",
+            "vision": "datasets/Movieclips_50/videos",
+            "audio": "datasets/Movieclips_50/audios",
+            "txt": "datasets/annotations/custom/custom_annotations.json",
+            "vision_transforms": "crop_flip",
+            "vision_format": "video_rawvideo",
+            "vision_sample_num": 16,
+            "audio_sample_num": 4,         
+            "task": "cap%tva",
+            "n_workers": 8,
+            "batch_size": 1,
+            "max_output_txt_len": 100,
+            "beam_size": 5
+        }]
+    }
+}
