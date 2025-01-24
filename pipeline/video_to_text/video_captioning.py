@@ -1,15 +1,15 @@
-import json
 import os
-import argparse
+import json
+import torch
 from PIL import Image
 from transformers import AutoTokenizer, AutoProcessor, AutoConfig, AutoModel
 from decord import VideoReader, cpu
-import torch
 from moviepy import VideoFileClip
+from utils.translator import DeepLTranslator, DeepGoogleTranslator
 
 
 class VideoCaptioningPipeline:
-    def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False):
+    def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False, segment_duration=5, mode='video2text'):
         # Model initialization
         self.config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         self.model = AutoModel.from_pretrained(
@@ -19,19 +19,21 @@ class VideoCaptioningPipeline:
             trust_remote_code=True
         )
         self.model.eval().cuda()
-        
+
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.processor = self.model.init_processor(self.tokenizer)
         self.MAX_NUM_FRAMES = 16
 
         self.keep_clips = keep_clips
-        
-        # Create output and clips directories if they don't exist
-        self.output_dir = "output"
-        self.clips_dir = "clips"
+        self.segment_duration = segment_duration
+
+        # Create output and clips directories with mode-specific paths
+        self.mode = mode
+        self.output_dir = f"output/{mode}"
+        self.clips_dir = f"clips/{mode}"
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.clips_dir, exist_ok=True)
-        
+
         # Initialize video mapping structure
         self.video_mapping = {}
 
@@ -39,7 +41,11 @@ class VideoCaptioningPipeline:
         self.video_counter = 1
         self.clip_counter = 1
         self.video_name_to_id = {}
-        
+
+        # Initialize translator
+        self.translator = DeepGoogleTranslator()
+
+
     def _extract_clip(self, video_path, start_time, end_time):
         """Extract clip from video using timestamp"""
         clip = VideoFileClip(video_path).subclipped(start_time, end_time)
@@ -48,7 +54,7 @@ class VideoCaptioningPipeline:
         clip.write_videofile(clip_path, codec='libx264', audio=False)
         clip.close()
         return clip_path
-        
+
     def _encode_video(self, video_path):
         """Encode video frames for processing"""
         def uniform_sample(l, n):
@@ -68,10 +74,10 @@ class VideoCaptioningPipeline:
     def _generate_caption(self, video_frames):
         """Generate caption for video frames"""
         messages = [
-            {"role": "user", "content": "<|video|> Carefully analyze the entire video and generate a detailed yet concise caption that captures the overarching context, key events, and interactions observed throughout. Include descriptions of the setting, characters, actions, and any transitions or changes in the scene. Focus on providing a holistic summary that conveys the main idea or narrative of the video, ensuring that all information is grounded in what is explicitly shown, with no added assumptions or fabricated details."},
+            {"role": "user", "content": "<|video|> Describe this video in detail."},
             {"role": "assistant", "content": ""}
         ]
-        
+
         inputs = self.processor(messages, images=None, videos=[video_frames])
         inputs.to('cuda')
         inputs.update({
@@ -79,13 +85,13 @@ class VideoCaptioningPipeline:
             'max_new_tokens': 200,
             'decode_text': True,
         })
-        
+
         return self.model.generate(**inputs)[0]
 
     def process_videos(self, video_list):
         """Process list of videos and generate captions"""
         results = []
-        
+
         for video_path, start_time, end_time in video_list:
             if video_path not in self.video_name_to_id:
                 self.video_name_to_id[video_path] = f"video{self.video_counter}"
@@ -95,18 +101,24 @@ class VideoCaptioningPipeline:
                     "clips": []
                 }
                 self.video_counter += 1
-            
+
             video_id = self.video_name_to_id[video_path]
             clip_id = f"clip{self.clip_counter}"
-            
+
             # Extract clip
             clip_path = self._extract_clip(video_path, start_time, end_time)
-            
+
             try:
                 # Encode and generate caption
                 video_frames = self._encode_video(clip_path)
                 caption = self._generate_caption(video_frames)
                 
+                # video2text 모드일 때만 한글 번역 추가
+                if self.mode == "video2text":
+                    caption_ko = self.translator.translate_en_to_ko(caption)
+                else:
+                    caption_ko = None
+
                 # Add clip info to mapping with clip path
                 self.video_mapping[video_id]["clips"].append({
                     "clip_id": clip_id,
@@ -114,7 +126,7 @@ class VideoCaptioningPipeline:
                     "end_time": end_time,
                     "clip_path": clip_path
                 })
-                
+
                 # Create result entry
                 entry = {
                     "video_path": video_path,
@@ -124,80 +136,90 @@ class VideoCaptioningPipeline:
                     "end_time": end_time,
                     "caption": caption
                 }
+                
+                # video2text 모드일 때만 한글 캡션 추가
+                if caption_ko:
+                    entry["caption_ko"] = caption_ko
+                
                 self.clip_counter += 1
                 results.append(entry)
-                
+
             finally:
                 # Only remove clip if keep_clips is False
                 if not self.keep_clips and os.path.exists(clip_path):
                     os.remove(clip_path)
-        
+
         return results
+    
+    def get_video_duration(self, video_path):
+        """Get video duration using moviepy"""
+        clip = VideoFileClip(video_path)
+        duration = clip.duration
+        clip.close()
+        return duration
+
+    def generate_segments(self, video_path):
+        """Generate segments for a video with fixed duration"""
+        duration = self.get_video_duration(video_path)
+        segments = []
+        start_time = 0
+        
+        while start_time < duration:
+            end_time = min(start_time + self.segment_duration, duration)
+            if end_time - start_time >= 1:  # 최소 1초 이상인 세그먼트만 포함
+                segments.append((start_time, end_time))
+            start_time = end_time
+        
+        return segments
+
+    def process_directory(self, videos_dir):
+        """Process all MP4 files in the directory"""
+        video_list = []
+        for file in os.listdir(videos_dir):
+            if file.lower().endswith('.mp4'):
+                video_path = os.path.join(videos_dir, file)
+                print(f"Processing video: {file}")
+                
+                # Generate segments for this video
+                segments = self.generate_segments(video_path)
+                
+                # Add segments to video list
+                video_list.extend([
+                    (video_path, start, end)
+                    for start, end in segments
+                ])
+        
+        if not video_list:
+            print("Error: No valid videos found to process")
+            return None
+            
+        print(f"Total segments to process: {len(video_list)}")
+        return self.process_videos(video_list)
 
     def save_results(self, results):
-        """Save results to JSON files in output directory"""
-        # Save results
-        output_path = os.path.join(self.output_dir, "captions.json")
-        with open(output_path, 'w') as f:
-            json.dump(results, indent=4, fp=f)
-            
-        # Save video mapping
-        mapping_path = os.path.join(self.output_dir, "captions_mapping.json")
-        with open(mapping_path, 'w') as f:
-            json.dump(self.video_mapping, indent=4, fp=f)
+        """Save results to JSON files in mode-specific output directory"""
+        # Save results with mode-specific names
+        if self.mode == "video2text":
+            captions_file = "v2t_captions.json"
+            mapping_file = "v2t_mapping.json"
+        else:  # text2video
+            captions_file = "t2v_captions.json"
+            mapping_file = "t2v_mapping.json"
 
+        # Save captions
+        output_path = os.path.join(self.output_dir, captions_file)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(results, indent=4, ensure_ascii=False, fp=f)
+
+        # Save video mapping
+        mapping_path = os.path.join(self.output_dir, mapping_file)
+        with open(mapping_path, 'w', encoding='utf-8') as f:
+            json.dump(self.video_mapping, indent=4, ensure_ascii=False, fp=f)
 
 
 def find_video_file(videos_dir, video_name):
     """Find video file in directory by name (ignoring extension)"""
     for file in os.listdir(videos_dir):
-        # 파일 확장자를 제외한 이름 비교
         if file.rsplit('.', 1)[0] == video_name:
             return os.path.join(videos_dir, file)
     return None
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='Video Captioning with Segments')
-    parser.add_argument('--videos_dir', type=str, required=True,
-                        help='Directory containing video files')
-    parser.add_argument('--input_json', type=str, required=True,
-                        help='Path to input JSON file containing video segments')
-    parser.add_argument('--keep_clips', action='store_true',
-                        help='Keep the extracted clips instead of deleting them')
-    return parser.parse_args()
-
-if __name__ == "__main__":
-    args = parse_args()
-    
-    # Initialize pipeline
-    pipeline = VideoCaptioningPipeline(keep_clips=args.keep_clips)
-    
-    # Load segments from JSON
-    with open(args.input_json, 'r') as f:
-        input_data = json.load(f)
-    
-    # Create video list from all videos and their segments
-    video_list = []
-    for video_data in input_data['videos']:
-        video_path = find_video_file(args.videos_dir, video_data['video_name'])
-        
-        # Verify video exists
-        if not video_path:
-            print(f"Warning: Video not found: {video_data['video_name']}")
-            continue
-            
-        # Add all segments for this video
-        video_list.extend([
-            (video_path, seg['start'], seg['end'])
-            for seg in video_data['segments']
-        ])
-    
-    if not video_list:
-        print("Error: No valid videos found to process")
-        exit(1)
-    
-    # Process videos
-    results = pipeline.process_videos(video_list)
-    
-    # Save results (without specifying output path)
-    pipeline.save_results(results)
