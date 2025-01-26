@@ -16,7 +16,7 @@ from utils import load_model_and_processor, get_visual_type
 import os
 import torch
 
-def generate_caption(model_name_or_path, video_path, prompt, max_n_frames=8, max_new_tokens=512, top_p=1, temperature=0):
+def generate_caption(model, processor, video_path, prompt, max_n_frames=8, max_new_tokens=512, top_p=1, temperature=0):
     """
     Generate a caption for a given video using the specified model and prompt.
 
@@ -32,12 +32,12 @@ def generate_caption(model_name_or_path, video_path, prompt, max_n_frames=8, max
     Returns:
         str: The generated caption for the video.
     """
-    model, processor = load_model_and_processor(model_name_or_path, max_n_frames=max_n_frames)
 
     # Prepare inputs
     inputs = processor(prompt, video_path, edit_prompt=True, return_prompt=True)
     if 'prompt' in inputs:
-        print(f"Prompt: {inputs.pop('prompt')}")
+        # print(f"Prompt: {inputs.pop('prompt')}")
+        inputs.pop('prompt')
     inputs = {k: v.to(model.device) for k, v in inputs.items() if v is not None}
 
     # Generate caption
@@ -57,7 +57,28 @@ def generate_caption(model_name_or_path, video_path, prompt, max_n_frames=8, max
 if __name__ == "__main__":
     model_path = "../../Tarsier-7b"  # 모델 경로
     video_file = "../dataset/videos/clip_026.mp4"  # 비디오 파일 경로
-    instruction = "<video>\nDescribe the video in detail."  # 프롬프트
 
-    caption = generate_caption(model_path, video_file, instruction)
+    model, processor = load_model_and_processor(model_path, max_n_frames=8)
+    
+    total_story = ""
+    instruction = "<video>\nWho are the main characters in this scene?"  # 프롬프트
+    caption = generate_caption(model, processor, video_file, instruction)
+    total_story += f"Main characters: {caption}\n"
     print(f"Generated Caption: {caption}")
+
+    instruction = "<video>\nDescribe the behavior and interactions within a video."  # 프롬프트
+    caption = generate_caption(model, processor, video_file, instruction)
+    total_story += f"Behavior and interactions: {caption}\n"
+    print(f"Generated Caption: {caption}")
+    
+    instruction = "<video>\nDescribe the background of the scene"  # 프롬프트
+    caption = generate_caption(model, processor, video_file, instruction)
+    total_story += f"Background: {caption}\n"
+    print(f"Generated Caption: {caption}")
+    
+    instruction = "<video>\nDescribe the video in detail."  # 프롬프트
+    caption = generate_caption(model, processor, video_file, instruction)
+    total_story += f"Video detail: {caption}\n"
+    print(f"Generated Caption: {caption}")
+
+    print(total_story)
