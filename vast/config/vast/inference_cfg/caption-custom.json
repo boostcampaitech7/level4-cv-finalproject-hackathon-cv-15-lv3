@@ -1,0 +1,37 @@
+{
+    "run_cfg": {
+        "default": "./config/vast/default_run_cfg.json",
+        "output_dir": "./output/test"
+    },
+    
+    "model_cfg": {
+        "default": "./config/vast/default_model_cfg.json"
+    },
+
+    "data_cfg": {
+        "train": [],
+        
+        "val": [{
+            "type": "annoindexed",
+            "training": false,
+            "name": "custom_cap",
+            "vision": "datasets/test/videos",
+            "audio": "datasets/test/audios",
+            "txt": "datasets/annotations/custom/custom_one.json",
+            "vision_transforms": "crop_flip",
+            "vision_format": "video_rawvideo",
+            "vision_sample_num": 16,
+            "audio_sample_num": 5,         
+            "task": "cap%tva",
+            "n_workers": 8,
+            "batch_size": 1,
+            "max_generation_len": 100,
+            "min_generation_len": 20,
+            "beam_size": 5,
+            "temperature": 0.7,
+            "top_k": 50,
+            "top_p": 0.9,
+            "frame_rate": 10
+        }]
+    }
+}
