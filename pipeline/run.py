@@ -1,22 +1,22 @@
 import argparse
 import json
 import os
+import sys
 from moviepy import VideoFileClip
 from utils.translator import DeepLTranslator, DeepGoogleTranslator
-from video_to_text.video_captioning import VideoCaptioningPipeline
+from video_to_text.video_captioning import MPLUGVideoCaptioningPipeline, TarsierVideoCaptioningPipeline
 from text_to_video.embedding import FaissSearch
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def save_search_result_clip(video_path, start_time, end_time, output_dir, clip_name):
     """검색 결과 클립을 저장"""
     os.makedirs(output_dir, exist_ok=True)
     
     try:
-        # 비디오에서 클립 추출
-        clip = VideoFileClip(video_path).subclipped(start_time, end_time)
+        clip = VideoFileClip(video_path).subclip(start_time, end_time)
         output_path = os.path.join(output_dir, f"{clip_name}.mp4")
-        
-        # 클립 저장
-        clip.write_videofile(output_path, codec='libx264', audio=False)
+        clip.write_videofile(output_path, codec='libx264', audio=False, verbose=False)
         clip.close()
         
         print(f"✅ 검색 결과 클립 저장 완료: {output_path}")
@@ -26,19 +26,29 @@ def save_search_result_clip(video_path, start_time, end_time, output_dir, clip_n
         print(f"❌ 클립 저장 중 오류 발생: {str(e)}")
         return None
 
-def text_to_video_search(query_text):
+def text_to_video_search(query_text, model_type="mplug"):
     """텍스트로 비디오 검색하는 파이프라인"""
     # 설정 값
     VIDEOS_DIR = "../videos"
-    KEEP_CLIPS = False
+    KEEP_CLIPS = True
     SEGMENT_DURATION = 5
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
 
     # 1. VideoCaptioningPipeline으로 전체 비디오 처리
-    pipeline = VideoCaptioningPipeline(
-        keep_clips=KEEP_CLIPS,
-        segment_duration=SEGMENT_DURATION,
-        mode="text2video"  # 모드 지정
-    )
+    if model_type == "mplug":
+        pipeline = MPLUGVideoCaptioningPipeline(
+            keep_clips=KEEP_CLIPS,
+            segment_duration=SEGMENT_DURATION,
+            mode="text2video"
+        )
+    else:  # tarsier
+        pipeline = TarsierVideoCaptioningPipeline(
+            model_path=model_path,
+            keep_clips=KEEP_CLIPS,
+            segment_duration=SEGMENT_DURATION,
+            mode="text2video"
+        )
     
     # 전체 비디오 디렉토리 처리
     results = pipeline.process_directory(VIDEOS_DIR)
@@ -46,8 +56,8 @@ def text_to_video_search(query_text):
         pipeline.save_results(results)
     
     # 2. FAISS 검색 시스템 및 번역기 초기화
-    translator = DeepLTranslator()
-    faiss_search = FaissSearch(json_path="output/text2video/t2v_captions.json")  # 경로 수정
+    translator = DeepGoogleTranslator()
+    faiss_search = FaissSearch(json_path=f"output/text2video/t2v_captions.json")
     
     # 검색 실행
     similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=1)
@@ -73,18 +83,27 @@ def text_to_video_search(query_text):
             clip_name
         )
 
-def video_to_text_process():
+def video_to_text_process(model_type="mplug"):
     """비디오를 텍스트로 변환하는 파이프라인"""
     # 설정 값
     VIDEOS_DIR = "../videos"
     INPUT_JSON = "video_to_text/input_table.json"
     KEEP_CLIPS = False
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
 
-    # 파이프라인 초기화 (모드 지정)
-    pipeline = VideoCaptioningPipeline(
-        keep_clips=KEEP_CLIPS,
-        mode="video2text"
-    )
+    # 파이프라인 초기화 (모델 선택)
+    if model_type == "mplug":
+        pipeline = MPLUGVideoCaptioningPipeline(
+            keep_clips=KEEP_CLIPS,
+            mode="video2text"
+        )
+    else:  # tarsier
+        pipeline = TarsierVideoCaptioningPipeline(
+            model_path=model_path,
+            keep_clips=KEEP_CLIPS,
+            mode="video2text"
+        )
     
     # JSON 파일에서 세그먼트 정보 로드
     with open(INPUT_JSON, 'r') as f:
@@ -115,15 +134,17 @@ def main():
     parser = argparse.ArgumentParser(description='Video Processing Pipeline')
     parser.add_argument('mode', choices=['text2video', 'video2text'],
                       help='Choose pipeline mode: text2video or video2text')
+    parser.add_argument('--model', choices=['mplug', 'tarsier'], default='mplug',
+                      help='Choose model type: mplug or tarsier (default: mplug)')
     
     args = parser.parse_args()
     
     if args.mode == 'text2video':
         # 검색할 텍스트 직접 지정
         query_text = "남자 얼굴 위에 거미가 올라가서 남자가 놀라는 장면"
-        text_to_video_search(query_text)
+        text_to_video_search(query_text, model_type=args.model)
     else:
-        video_to_text_process()
+        video_to_text_process(model_type=args.model)
 
 if __name__ == "__main__":
     main()

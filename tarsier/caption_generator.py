@@ -56,7 +56,7 @@ def generate_caption(model, processor, video_path, prompt, max_n_frames=8, max_n
 # Example usage
 if __name__ == "__main__":
     model_path = "../../Tarsier-7b"  # 모델 경로
-    video_file = "../dataset/videos/clip_026.mp4"  # 비디오 파일 경로
+    video_file = "../videos/clip_026.mp4"  # 비디오 파일 경로
 
     model, processor = load_model_and_processor(model_path, max_n_frames=8)
     
