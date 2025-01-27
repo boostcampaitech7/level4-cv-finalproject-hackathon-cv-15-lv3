@@ -63,17 +63,15 @@ def split_video_ffmpeg(input_video, scene_list, output_dir):
 
     for i, (start, end) in enumerate(scene_list):
         output_file = os.path.join(output_dir, f"scene_{i+1:03}.mp4")
+
         cmd = [
             "ffmpeg",
-            "-ss", str(start.get_seconds()),  # 시작 시간
+            "-ss", str(start.get_seconds()-0.05),  # 시작 시간, 다음 프레임도 포함돼서 -0.5 
             "-i", input_video,
             "-t", str(end.get_seconds() - start.get_seconds()),  # `-to` 대신 `-t` 사용하여 상대적 길이 설정
             "-c", "copy",
             output_file
         ]
-
-
-        print(f"Running command: {' '.join(cmd)}")  # Debugging
 
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -83,12 +81,13 @@ def split_video_ffmpeg(input_video, scene_list, output_dir):
             
 if __name__ == "__main__":
     category_name = "Movieclips"
-    # feat : 전체 비디오 돌릴꺼면 수정 ㄱㄱ
-    num_videos = 1 # 총 1218개
 
     # feat: 경로 수정
     root_video_path = "/data/ephemeral/home/data/YouTube-8M-video"
     annotation_path = "./data/YouTube-8M-clips-annatations"
+    num_videos = len([f for f in os.listdir(root_video_path) if f.endswith(".mp4")])  # Count only MP4 files
+    # num_videos = 1
+    print("video 개수", num_videos)
 
     # feat : json 읽고 video_name 에 접근
     raw_json_data = load_json("/data/ephemeral/home/data/YouTube-8M-annatation/Movieclips_annotation.json")
@@ -143,15 +142,15 @@ if __name__ == "__main__":
                 # Append to JSON annotation
                 scene_data.append({
                     "video_path": f"{video_name}/{clip_file_name}",
-                    "video_id": video_id, # video1, video2로 할 지 영상 제목으로 할 지
+                    "video_id": video_id,
                     
                     # feat: 수정 부분
                     # "clip_id": f"{scene_number:05}", # 고유번호로 할 지
                     "title" : title,
                     "url" : url,
-            
-                    "start_time": round(start.get_seconds(),2), # ms가 존재함 어찌 할까여
-                    "end_time": round(end.get_seconds(),2),
+
+                    "start_time": f"{(start.get_seconds()):.2f}",
+                    "end_time": f"{end.get_seconds():.2f}"
                 })
                 scene_number += 1  # Increment global scene number
         else:
