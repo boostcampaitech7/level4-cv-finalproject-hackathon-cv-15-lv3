@@ -5,35 +5,6 @@ import numpy as np
 import requests
 from sentence_transformers import SentenceTransformer
 
-class DeepLTranslator:
-    """DeepL API를 사용한 한국어 ↔ 영어 번역기 클래스"""
-    
-    def __init__(self, api_key):
-        self.api_key = api_key
-        self.url = "https://api-free.deepl.com/v2/translate"
-
-    def translate(self, text, source_lang, target_lang):
-        """DeepL API를 사용하여 번역 수행"""
-        params = {
-            "auth_key": self.api_key,
-            "text": text,
-            "source_lang": source_lang,
-            "target_lang": target_lang
-        }
-        response = requests.post(self.url, data=params)
-        
-        if response.status_code != 200:
-            print(f"🚨 번역 API 오류: {response.status_code} - {response.text}")
-            return None
-        
-        return response.json().get("translations", [{}])[0].get("text", "")
-
-    def translate_ko_to_en(self, text):
-        return self.translate(text, "KO", "EN")
-
-    def translate_en_to_ko(self, text):
-        return self.translate(text, "EN", "KO")
-
 
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
@@ -42,15 +13,31 @@ class FaissSearch:
         self.json_path = json_path
         self.model = SentenceTransformer(model_name)
 
-        # ✅ JSON 데이터 로드 또는 생성
+        # JSON 데이터 로드 또는 생성
         if os.path.exists(self.json_path):
-            self._load_json_data()
+            with open(self.json_path, 'r', encoding='utf-8') as f:
+                self.data = json.load(f)
+                
+            # 임베딩이 없는 경우 생성
+            if "embedding" not in self.data[0]:
+                print("📂 임베딩 벡터 생성 중...")
+                for entry in self.data:
+                    entry["embedding"] = self.model.encode(entry["caption"]).tolist()
+                
+                # 임베딩이 추가된 JSON 저장
+                with open(self.json_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.data, f, indent=4, ensure_ascii=False)
+                print(f"✅ 임베딩 벡터 저장 완료 → {self.json_path}")
         else:
-            print("📂 JSON 파일이 존재하지 않음. 새로운 임베딩을 생성합니다...")
-            self.generate_and_save_embeddings("output/captions.json")
-            self._load_json_data()
+            print(f"🚨 오류: {self.json_path} 파일을 찾을 수 없습니다!")
+            return
 
-        # ✅ FAISS 인덱스 초기화
+        # 임베딩 배열 생성
+        self.captions = [entry["caption"] for entry in self.data]
+        self.embeddings = np.array([entry["embedding"] for entry in self.data], dtype=np.float32)
+        faiss.normalize_L2(self.embeddings)
+
+        # FAISS 인덱스 초기화
         self._initialize_faiss(use_gpu)
 
     def _load_json_data(self):
@@ -68,27 +55,6 @@ class FaissSearch:
         self.index = faiss.IndexFlatIP(self.dimension)
         self.gpu_index = faiss.index_cpu_to_gpu(self.res, 0, self.index) if use_gpu else self.index
         self.gpu_index.add(self.embeddings)
-
-    def generate_and_save_embeddings(self, source_json_path):
-        """새로운 임베딩을 생성하여 JSON 파일로 저장"""
-        if not os.path.exists(source_json_path):
-            print(f"🚨 오류: {source_json_path} 파일을 찾을 수 없습니다!")
-            return
-        
-        print("🔄 캡션을 임베딩하고 JSON에 저장 중...")
-
-        with open(source_json_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        for entry in data:
-            caption_text = entry["caption"]
-            embedding = self.model.encode(caption_text).tolist()  # NumPy 배열을 리스트로 변환
-            entry["embedding"] = embedding
-
-        with open(self.json_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
-
-        print(f"✅ 새로운 임베딩 저장 완료! → {self.json_path}")
 
     def find_similar_captions(self, input_text, translator, top_k=3):
         """한국어 입력 → 영어 변환 → FAISS 검색 → 한국어 변환 후 결과 반환"""
