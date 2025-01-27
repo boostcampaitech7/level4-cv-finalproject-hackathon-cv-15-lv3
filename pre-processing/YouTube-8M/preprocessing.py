@@ -4,15 +4,16 @@ import json
 import logging
 import shutil
 import csv
-import argparse
 from scenedetect import detect, ContentDetector, split_video_ffmpeg
 from scenedetect.scene_detector import FlashFilter
+from tqdm import tqdm  # 진행 상황 표시를 위한 라이브러리
 
 logging.basicConfig(filename="process.log", level=logging.INFO)
 
-def filter_long_scenes(scene_list, max_frames):
-    """Filter out scenes longer than max_frames."""
-    return [(start, end) for start, end in scene_list if (end.get_frames() - start.get_frames()) <= max_frames]
+def load_json(json_path):
+    """JSON 파일을 로드"""
+    with open(json_path, 'r', encoding='utf-8') as file:
+        return json.load(file)
 
 def save_json(annotation_path, file_name, scene_data):
     """Save scene data as a single JSON file."""
@@ -21,29 +22,7 @@ def save_json(annotation_path, file_name, scene_data):
     with open(json_path, "w") as json_file:
         json.dump(scene_data, json_file, indent=4)
 
-def save_csv(annotation_path, file_name, scene_data):
-    """Save scene data as a single CSV file."""
-    os.makedirs(annotation_path, exist_ok=True)
-    csv_path = os.path.join(annotation_path, f"{file_name}.csv")
-    with open(csv_path, mode="w", newline="") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=scene_data[0].keys())
-        writer.writeheader()
-        writer.writerows(scene_data)
-
-def split_audio_clip(audio_path, output_audio_path, start_time, end_time):
-    """Split audio using ffmpeg based on start and end times."""
-    os.makedirs(os.path.dirname(output_audio_path), exist_ok=True)
-    cmd = [
-        "ffmpeg", "-i", audio_path,
-        "-ss", f"{start_time:.2f}",
-        "-to", f"{end_time:.2f}",
-        "-c", "copy",
-        output_audio_path,
-        "-y"
-    ]
-    os.system(" ".join(cmd))
-
-def create_clip_videos(input_video_path, output_dir_path, min_scene_len_seconds, max_scene_len_seconds):
+def create_clip_videos(input_video_path, output_dir_path):
     """Create clip videos and return scene list."""
     os.makedirs(output_dir_path, exist_ok=True)
 
@@ -52,92 +31,127 @@ def create_clip_videos(input_video_path, output_dir_path, min_scene_len_seconds,
     fps = cap.get(cv2.CAP_PROP_FPS)
     if not fps or fps == 0:
         logging.error(f"Failed to retrieve FPS for {input_video_path}")
-        return []
+        return [], 0
     cap.release()
 
-    min_scene_len_frames = int(min_scene_len_seconds * fps)
-    max_scene_len_frames = int(max_scene_len_seconds * fps)
+    min_scene_len_frames = int(1 * fps)
 
-    scene_list = detect(input_video_path, ContentDetector(min_scene_len=min_scene_len_frames, filter_mode=FlashFilter.Mode.MERGE))
-    return filter_long_scenes(scene_list, max_scene_len_frames), fps
+    scene_list = detect(input_video_path, ContentDetector(min_scene_len=min_scene_len_frames))
+    return scene_list, fps
 
+import subprocess
+'''
+        cmd = [
+            "ffmpeg",
+            "-i", input_video,  # Input file
+            "-ss", str(start.get_seconds()),  # 정확한 시작 시간 설정
+            "-to", str(end.get_seconds()),  # 종료 시간 설정
+            '-c:v', 'mpeg4',  # Use mpeg4 codec for video
+            '-c:a', 'aac',    # Use aac codec for audio
+            '-strict', 'experimental',
+            '-b:a', '192k',
+            '-y',
+            output_file         
+        ]
+'''
+def split_video_ffmpeg(input_video, scene_list, output_dir):
+    if not scene_list:
+        print("No scenes detected, skipping video processing.")
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    for i, (start, end) in enumerate(scene_list):
+        output_file = os.path.join(output_dir, f"scene_{i+1:03}.mp4")
+        cmd = [
+            "ffmpeg",
+            "-ss", str(start.get_seconds()),  # 시작 시간
+            "-i", input_video,
+            "-t", str(end.get_seconds() - start.get_seconds()),  # `-to` 대신 `-t` 사용하여 상대적 길이 설정
+            "-c", "copy",
+            output_file
+        ]
+
+
+        print(f"Running command: {' '.join(cmd)}")  # Debugging
+
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        if result.returncode != 0:
+            print(f"FFmpeg error: {result.stderr.decode()}")
+            break  # Stop if an error occurs
+            
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Download videos and audio from YouTube URLs.")
-    parser.add_argument("--category_name", type=str, help="The category name for the videos and audios.")
-    parser.add_argument("--num_videos", type=int, help="The number of videos to process. Default is -1 (process all videos).",default=-1)
-    parser.add_argument("--min_length", type=int, help="The number of videos to process. Default is -1 (process all videos).",default=3)
-    parser.add_argument("--max_length", type=int, help="The number of videos to process. Default is -1 (process all videos).",default=15)
+    category_name = "Movieclips"
+    # feat : 전체 비디오 돌릴꺼면 수정 ㄱㄱ
+    num_videos = 1 # 총 1218개
 
-    args = parser.parse_args()
+    # feat: 경로 수정
+    root_video_path = "/data/ephemeral/home/data/YouTube-8M-video"
+    annotation_path = "./data/YouTube-8M-clips-annatations"
 
-    category_name = args.category_name
-    min_length = args.min_length
-    max_length = args.max_length
+    # feat : json 읽고 video_name 에 접근
+    raw_json_data = load_json("/data/ephemeral/home/data/YouTube-8M-annatation/Movieclips_annotation.json")
+    json_video_name = {item["video_name"]: item for item in raw_json_data}
 
-    root_video_path = f"./data/YouTube-8M-{category_name}/videos"
-    root_audio_path = f"./data/YouTube-8M-{category_name}/audios"
-    annotation_path = f"./data/YouTube-8M-{category_name}/annotations"
     video_files = sorted(os.listdir(root_video_path))
 
-    if args.num_videos != -1:
-        if args.num_videos < -1:
+    if num_videos != -1:
+        if num_videos < -1:
             raise ValueError("--num_videos must be -1 (for all videos) or a positive integer.")
-        video_files = video_files[:args.num_videos]
+        video_files = video_files[:num_videos]
 
     scene_number = 1
     scene_data = []
 
-    for video_file in video_files:
-        video_id = os.path.splitext(video_file)[0]
-        logging.info(f"Processing video ID: {video_id}")
+    # tqdm으로 진행 상황 표시
+    for video_idx, video_file in enumerate(tqdm(video_files, desc="Processing Videos")):
+        video_name = os.path.splitext(video_file)[0]
+        logging.info(f"Processing video ID: {video_name}")
 
         input_video_path = os.path.join(root_video_path, video_file)
-        output_video_dir = os.path.join(f"./data/YouTube-8M-{category_name}/clip_videos/", video_id)
-        output_audio_dir = os.path.join(f"./data/YouTube-8M-{category_name}/clip_audios/", video_id)
 
-        # Get corresponding audio file
-        audio_path = os.path.join(root_audio_path, f"{video_id}.wav")
-        if not os.path.exists(audio_path):
-            logging.warning(f"No audio file found for video ID: {video_id}")
-            continue
+        # feat: 경로 수정
+        output_video_dir = os.path.join(f"./data/YouTube-8M-clips", video_name)
 
         # Detect scenes
-        scene_list, fps = create_clip_videos(input_video_path, output_video_dir, min_scene_len_seconds=min_length, max_scene_len_seconds=max_length)
+        scene_list, fps = create_clip_videos(input_video_path, output_video_dir)
 
         # Split the video into clips
         if scene_list:
             split_video_ffmpeg(input_video_path, scene_list, output_dir=output_video_dir)
 
             # Process each scene
-            for i, (start, end) in enumerate(scene_list):
-                clip_filename = f"{scene_number:05}.mp4"
-                audio_clip_filename = f"{scene_number:05}.wav"
-                old_filename = f"{video_id}-Scene-{i+1:03}.mp4"
+            for i, (start, end) in enumerate(tqdm(scene_list, desc=f"Processing Scenes for {video_name}", leave=False)):
+                # feat: 저장 video 이름 변경 ex) default : scene-001.mp4 -> 00001.mp4
+                clip_file_name = f"{scene_number:05}.mp4"
+                old_filename = f"scene_{i+1:03}.mp4"
                 old_path = os.path.join(output_video_dir, old_filename)
-                new_video_path = os.path.join(output_video_dir, clip_filename)
+                new_video_path = os.path.join(output_video_dir, clip_file_name)
 
                 # Rename video clip
                 if os.path.exists(old_path):
                     shutil.move(old_path, new_video_path)
-                    print(f"Renamed {old_path} to {new_video_path}")
+                    logging.info(f"Renamed {old_path} to {new_video_path}")
 
-                # Generate corresponding audio clip
-                audio_output_path = os.path.join(output_audio_dir, audio_clip_filename)
-                split_audio_clip(audio_path, audio_output_path, start.get_seconds(), end.get_seconds())
+                # feat: raw json 접근
+                raw_json = json_video_name[f"{video_name}.mp4"]
+                title = raw_json["title"]
+                url = raw_json["url"]
+                video_id = raw_json["video_id"]
 
                 # Append to JSON annotation
                 scene_data.append({
-                    "video_path": f"{video_id}/{clip_filename}",
-                    "audio_path": f"{video_id}/{audio_clip_filename}",
-                    "video_id": video_id,
-                    "clip_id": f"{scene_number:05}",
-                    "fps": fps,
-                    "start_time": start.get_timecode(),
-                    "end_time": end.get_timecode(),
-                    "start_frame": start.get_frames(),
-                    "end_frame": end.get_frames(),
-                    "duration_seconds": round(end.get_seconds() - start.get_seconds(), 2),
-                    "caption": ""  
+                    "video_path": f"{video_name}/{clip_file_name}",
+                    "video_id": video_id, # video1, video2로 할 지 영상 제목으로 할 지
+                    
+                    # feat: 수정 부분
+                    # "clip_id": f"{scene_number:05}", # 고유번호로 할 지
+                    "title" : title,
+                    "url" : url,
+            
+                    "start_time": round(start.get_seconds(),2), # ms가 존재함 어찌 할까여
+                    "end_time": round(end.get_seconds(),2),
                 })
                 scene_number += 1  # Increment global scene number
         else:
@@ -145,5 +159,5 @@ if __name__ == "__main__":
             continue
 
     # Save global JSON and CSV
-    save_json(annotation_path, f"{category_name}_annotations", scene_data)
-    save_csv(annotation_path, f"{category_name}_annotations", scene_data)
+    save_json(annotation_path, f"{category_name}_clips_annotations", scene_data)
+    logging.info(f"Saved annotations to {annotation_path}/{category_name}_annotations.json")
