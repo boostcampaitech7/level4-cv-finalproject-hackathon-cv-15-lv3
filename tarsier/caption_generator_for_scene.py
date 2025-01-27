@@ -30,14 +30,14 @@ def generate_caption(model, processor, video_path, prompts, max_n_frames=8, max_
     return captions
 
 # Path setup
-video_base_path = "/data/ephemeral/home/min/video_home"
-json_file_path = "/data/ephemeral/home/min/test2.json"
+video_base_path = "/data/ephemeral/home/min/clip/video_home"
+json_file_path = "/data/ephemeral/home/min/test.json"
 model_path = "/data/ephemeral/home/min/Tarsier-7b"
 
 # Prompts for caption generation
 prompts = [
-    "Who are the main characters in this scene?",
-    "Describe the behavior and interactions within a video.",
+    #"Who are the main characters in this scene?",
+    #"Describe the behavior and interactions within a video.",
     "Describe the background of the scene.",
     "Describe the video in detail."
 ]
