@@ -6,45 +6,182 @@
     <title>비디오 검색</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-        .search-container { margin-bottom: 20px; }
-        #results { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
-        .result-box { border: 2px solid #4CAF50; padding: 15px; max-width: 450px; background-color: #f9f9f9; border-radius: 10px; }
-        .extra-inputs { display: none; margin-top: 10px; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .search-container {
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .option-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .option-container label, .option-container select {
+            width: 50%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            text-align: center;
+            background-color: white;
+        }
+        #query_text {
+            width: 46%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #num_clips {
+            width: 50%; /* Half of the query_text width */
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .search-btn {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .search-btn:hover {
+            background-color: #45a049;
+        }
+        .result-container {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+        .result-box {
+            background: white;
+            border: 2px solid #4CAF50;
+            padding: 15px;
+            border-radius: 10px;
+            width: 250px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .segment-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            position: relative;
+        }
+        .segment-group input {
+            flex: 1;
+            min-width: 30%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .segment-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .remove-segment, #add-segment {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .remove-segment:hover, #add-segment:hover {
+            background: #c0392b;
+        }
+        #add-segment {
+            background: #4CAF50;
+        }
+        .remove-segment-in-group {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
-    <div class="search-container">
-        <h1>🎬 비디오 검색</h1>
-        <input type="text" id="query_text" placeholder="검색어 입력">
-        <select id="mode">
-            <option value="T2V">텍스트 → 비디오</option>
-            <option value="V2T">비디오 → 텍스트</option>
-        </select>
-        <div class="extra-inputs" id="extra-inputs">
-            <div id="segment-container">
-                <div class="segment-group">
-                    <input type="text" class="video_id" placeholder="비디오 ID 입력">
-                    <input type="text" class="start_time" placeholder="시작 시간 입력">
-                    <input type="text" class="end_time" placeholder="종료 시간 입력">
-                    <button type="button" class="remove-segment" onclick="removeSegment(this)">삭제</button>
-                </div>
+    <div class="container">
+        <div class="search-container">
+            <h1>🎬 비디오 검색</h1>
+            <div class="option-container">
+                <select id="mode">
+                    <option value="T2V">텍스트 → 비디오</option>
+                    <option value="V2T">비디오 → 텍스트</option>
+                </select>
+                <label for="video_captioning_flag">Video Captioning 활성화
+                    <input type="checkbox" id="video_captioning_flag">
+                </label>
             </div>
-            <button type="button" id="add-segment">+ 추가</button>
+            <div id="segment-container" style="display: none;"></div>
+            <div class="segment-buttons" style="display: none;">
+                <button type="button" id="add-segment">+ 추가</button>
+                <button type="button" class="remove-segment" id="remove-last-segment">삭제</button>
+                <button type="button" class="remove-segment" onclick="removeAllSegments()">전체 삭제</button>
+            </div>            
+            <div class="option-container">
+                <input type="text" id="query_text" placeholder="Enter search term">
+                <input type="text" id="num_clips" placeholder="Number of Clips" min="1">
+            </div>
+            <button class="search-btn" onclick="search()">검색</button>
         </div>
-        <button onclick="search()">검색</button>
     </div>
-    <div id="results"></div>
-
+    <div id="results" class="result-container"></div>
     <script>
         $(document).ready(function() {
             $("#mode").change(function() {
                 if ($(this).val() === "V2T") {
                     $("#query_text").hide();
-                    $("#extra-inputs").show();
+                    $("#num_clips").hide();
+                    $("#segment-container, .segment-buttons").show();
                 } else {
                     $("#query_text").show();
-                    $("#extra-inputs").hide();
+                    $("#num_clips").show();
+                    $("#segment-container, .segment-buttons").hide();
                 }
             });
 
@@ -54,21 +191,35 @@
                         <input type="text" class="video_id" placeholder="비디오 ID 입력">
                         <input type="text" class="start_time" placeholder="시작 시간 입력">
                         <input type="text" class="end_time" placeholder="종료 시간 입력">
-                        <button type="button" class="remove-segment" onclick="removeSegment(this)">삭제</button>
                     </div>
                 `;
                 $("#segment-container").append(segmentHtml);
             });
+
+            $("#remove-last-segment").click(function() {
+                $("#segment-container .segment-group").last().remove();
+            });
+
+            function removeAllSegments() {
+                $("#segment-container").empty();
+            }
         });
 
+    
         function removeSegment(button) {
             $(button).closest(".segment-group").remove();
         }
-
+        function removeAllSegments() {
+            $("#segment-container").empty();
+        }
         function search() {
             let mode = $("#mode").val();
-            let data = { mode };
+            let videoCaptioningFlag = $("#video_captioning_flag").is(":checked");
 
+            let numClips = parseInt($("#num_clips").val()) || 2; // 기본값 2 설정
+
+            let data = { mode, video_captioning_flag: videoCaptioningFlag };
+    
             if (mode === "T2V") {
                 let query_text = $("#query_text").val();
                 if (!query_text) {
@@ -76,13 +227,13 @@
                     return;
                 }
                 data.query_text = query_text;
+                data.top_k = numClips; // ✅ 추가: num_clips 값을 top_k로 전달
             } else {
                 let video_segments = [];
                 $(".segment-group").each(function() {
                     let video_id = $(this).find(".video_id").val();
                     let start_time = $(this).find(".start_time").val();
                     let end_time = $(this).find(".end_time").val();
-
                     if (video_id && start_time && end_time) {
                         video_segments.push({
                             video_id: video_id,
@@ -91,14 +242,13 @@
                         });
                     }
                 });
-
                 if (video_segments.length === 0) {
                     alert("비디오 ID, 시작 시간, 종료 시간을 입력해주세요!");
                     return;
                 }
                 data.video_segments = video_segments;
             }
-
+    
             $.ajax({
                 url: "/process",
                 type: "POST",

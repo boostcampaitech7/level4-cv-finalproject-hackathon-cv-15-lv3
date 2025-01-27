@@ -6,9 +6,9 @@ from transformers import AutoTokenizer, AutoProcessor, AutoConfig, AutoModel
 from decord import VideoReader, cpu
 from moviepy import VideoFileClip
 from utils.translator import DeepLTranslator, DeepGoogleTranslator
+from utils.tarsier_utils import load_model_and_processor
 
-
-class VideoCaptioningPipeline:
+class MPLUGVideoCaptioningPipeline:
     def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False, segment_duration=5, mode='video2text'):
         # Model initialization
         self.config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
@@ -223,3 +223,169 @@ def find_video_file(videos_dir, video_name):
         if file.rsplit('.', 1)[0] == video_name:
             return os.path.join(videos_dir, file)
     return None
+
+
+class TarsierVideoCaptioningPipeline:
+    def __init__(self, model_path, keep_clips=False, segment_duration=5, mode='video2text'):
+        # Model initialization
+        self.model, self.processor = load_model_and_processor(model_path, max_n_frames=8)
+        self.model.eval()
+        
+        self.keep_clips = keep_clips
+        self.segment_duration = segment_duration
+        self.mode = mode
+        
+        # Create output and clips directories
+        self.output_dir = f"output/{mode}"
+        self.clips_dir = f"clips/{mode}"
+        os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(self.clips_dir, exist_ok=True)
+        
+        # Initialize translator and video mapping
+        self.translator = DeepGoogleTranslator()
+        self.video_mapping = {}
+        self.clip_counter = 0
+
+    def generate_caption(self, video_path):
+        """Generate caption for a video clip using Tarsier"""
+        instructions = [
+            "<video>\nDescribe the video in detail.",
+            "<video>\nWhat are the main actions and events happening in this scene?",
+            "<video>\nDescribe the behavior and interactions within the video."
+        ]
+        
+        captions = []
+        for instruction in instructions:
+            try:
+                caption = self._generate_single_caption(video_path, instruction)
+                captions.append(caption)
+            except Exception as e:
+                print(f"🚨 캡션 생성 오류: {str(e)}")
+                continue
+        
+        # Combine captions
+        final_caption = " ".join(captions)
+        return final_caption
+
+    def _generate_single_caption(self, video_path, instruction):
+        """Generate a single caption with given instruction"""
+        inputs = self.processor(instruction, video_path, edit_prompt=True, return_prompt=True)
+        if 'prompt' in inputs:
+            inputs.pop('prompt')
+        
+        inputs = {k: v.to(self.model.device) for k, v in inputs.items() if v is not None}
+        
+        outputs = self.model.generate(
+            **inputs,
+            do_sample=True,
+            max_new_tokens=512,
+            top_p=0.9,
+            temperature=0.8,
+            use_cache=True
+        )
+        
+        output_text = self.processor.tokenizer.decode(
+            outputs[0][inputs['input_ids'][0].shape[0]:], 
+            skip_special_tokens=True
+        )
+        return output_text
+
+    def process_video(self, video_path, start_time, end_time):
+        """Process a video segment and generate caption"""
+        video_id = os.path.splitext(os.path.basename(video_path))[0]
+        clip_id = f"clip_{self.clip_counter + 1}"
+        
+        # Create video mapping entry
+        if video_id not in self.video_mapping:
+            self.video_mapping[video_id] = {
+                "video_path": video_path,
+                "clips": []
+            }
+        
+        # Extract clip
+        clip_path = os.path.join(self.clips_dir, f"{clip_id}.mp4")
+        try:
+            with VideoFileClip(video_path) as video:
+                clip = video.subclipped(start_time, end_time)
+                clip.write_videofile(clip_path, codec='libx264', audio=False)
+        except Exception as e:
+            print(f"🚨 클립 추출 오류: {str(e)}")
+            return None
+        
+        # Generate caption
+        caption = self.generate_caption(clip_path)
+        if not caption:
+            return None
+            
+        # Translate caption to Korean if in video2text mode
+        caption_ko = None
+        if self.mode == "video2text":
+            caption_ko = self.translator.translate_en_to_ko(caption)
+        
+        # Create result entry
+        result = {
+            "video_path": video_path,
+            "video_id": video_id,
+            "clip_id": clip_id,
+            "start_time": start_time,
+            "end_time": end_time,
+            "caption": caption
+        }
+        
+        if caption_ko:
+            result["caption_ko"] = caption_ko
+        
+        # Update video mapping
+        self.video_mapping[video_id]["clips"].append({
+            "clip_id": clip_id,
+            "start_time": start_time,
+            "end_time": end_time,
+            "clip_path": clip_path
+        })
+        
+        self.clip_counter += 1
+        
+        # Clean up if needed
+        if not self.keep_clips and os.path.exists(clip_path):
+            os.remove(clip_path)
+            
+        return result
+
+    def process_videos(self, video_list):
+        """Process list of videos"""
+        results = []
+        for video_path, start_time, end_time in video_list:
+            result = self.process_video(video_path, start_time, end_time)
+            if result:
+                results.append(result)
+        return results
+
+    def process_directory(self, videos_dir):
+        """Process all videos in directory"""
+        video_list = []
+        for file in os.listdir(videos_dir):
+            if file.endswith(('.mp4', '.avi', '.mov')):
+                video_path = os.path.join(videos_dir, file)
+                with VideoFileClip(video_path) as video:
+                    duration = video.duration
+                    for start_time in range(0, int(duration), self.segment_duration):
+                        end_time = min(start_time + self.segment_duration, duration)
+                        video_list.append((video_path, start_time, end_time))
+        return self.process_videos(video_list)
+
+    def save_results(self, results):
+        """Save results to JSON files"""
+        if self.mode == "video2text":
+            captions_file = "v2t_captions.json"
+            mapping_file = "v2t_mapping.json"
+        else:
+            captions_file = "t2v_captions.json"
+            mapping_file = "t2v_mapping.json"
+
+        output_path = os.path.join(self.output_dir, captions_file)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=4, ensure_ascii=False)
+
+        mapping_path = os.path.join(self.output_dir, mapping_file)
+        with open(mapping_path, 'w', encoding='utf-8') as f:
+            json.dump(self.video_mapping, f, indent=4, ensure_ascii=False)

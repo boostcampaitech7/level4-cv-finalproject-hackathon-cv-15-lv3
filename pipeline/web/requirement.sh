@@ -13,3 +13,5 @@ pip install deep-translator
 pip install faiss-gpu
 pip install icecream
 pip install einops==0.8.0
+
+mkdir videos
