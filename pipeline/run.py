@@ -16,7 +16,7 @@ def save_search_result_clip(video_path, start_time, end_time, output_dir, clip_n
     try:
         clip = VideoFileClip(video_path).subclipped(start_time, end_time)
         output_path = os.path.join(output_dir, f"{clip_name}.mp4")
-        clip.write_videofile(output_path, codec='libx264', audio=False, verbose=False)
+        clip.write_videofile(output_path, codec='libx264', audio=False)
         clip.close()
         
         print(f"✅ 검색 결과 클립 저장 완료: {output_path}")

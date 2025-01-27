@@ -268,9 +268,7 @@ class TarsierVideoCaptioningPipeline:
     def generate_caption(self, video_path):
         """Generate caption for a video clip using Tarsier"""
         instructions = [
-            "<video>\nDescribe the video in detail.",
-            "<video>\nWhat are the main actions and events happening in this scene?",
-            "<video>\nDescribe the behavior and interactions within the video."
+            "<video>\nDescribe the video in detail."
         ]
         
         captions = []
