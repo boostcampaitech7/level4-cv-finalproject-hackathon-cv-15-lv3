@@ -7,6 +7,7 @@ from decord import VideoReader, cpu
 from moviepy import VideoFileClip
 from utils.translate import DeepLTranslator, Translator, ParallelTranslator, DeepGoogleTranslator
 
+# 25. 1. 24. mPLUG 최신 모델 변경
 # mPLUG/mPLUG-Owl3-7B-240728
 # mPLUG/mPLUG-Owl3-7B-241101
 class VideoCaptioningPipeline:
@@ -78,7 +79,7 @@ class VideoCaptioningPipeline:
     def _generate_caption(self, video_frames):
         """Generate caption for video frames"""
         messages = [
-            {"role": "user", "content": "<|video|> Describe this video in detail."},
+            {"role": "user", "content": "<|video|> Do not include details that you are not sure of. Describe the objects which the characters have."},
             {"role": "assistant", "content": ""}
         ]
 

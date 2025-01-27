@@ -22,7 +22,7 @@ SEGMENT_DURATION = 5
 DEEPL_API_KEY = "dabf2942-070c-47e2-94e1-b43cbef766e3:fx"
 JSON_PATH = "output/text2video/t2v_embedding.json"
 SOURCE_JSON_PATH = "output/text2video/t2v_captions.json"
-VideoCaptioning_flag = False # True일 때 captioning 진행 (영상 한개 4분)
+# VideoCaptioning_flag = False # True일 때 captioning 진행 (영상 한개 4분)
 translator_mode = 'google' # deepl, translate, batch-deepl, batch-translate, google
 max_workers = 4 # 번역 배치 크기
 
@@ -59,6 +59,7 @@ def process():
     """Process search request"""
     data = request.json
     mode = data.get("mode")
+    VideoCaptioning_flag = data.get("video_captioning_flag", False)  # ✅ 체크박스 값 적용
 
     if mode not in ["V2T", "T2V"]:
         return jsonify({"error": "Invalid mode"}), 400
@@ -75,6 +76,8 @@ def process():
 
     if mode == "T2V":
         query_text = data.get("query_text")
+        top_k = int(data.get("top_k", 2))
+        print(top_k)
         if not query_text:
             return jsonify({"error": "No text provided"}), 400
 
@@ -93,15 +96,15 @@ def process():
             raise ValueError(f"🚨 지원되지 않는 translator_mode: {translator_mode}")
 
         # ✅ FAISS 검색 객체 생성 및 임베딩 저장
-        #  faiss_search = FaissSearch(json_path=JSON_PATH)
+        faiss_search = FaissSearch(json_path=JSON_PATH)
         faiss_search.generate_and_save_embeddings(SOURCE_JSON_PATH)
 
         # ✅ FAISS 검색 수행
-        similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=2)
+        similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k)
         total_clips = len(similar_captions)  # 전체 클립 개수 계산
 
+        # <h2 style='text-align: center; margin-bottom: 20px;'>🔍 검색 결과</h2><br><br>
         results_html = """
-        <h2 style='text-align: center; margin-bottom: 20px;'>🔍 검색 결과</h2><br><br>
         <div style='display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;'>
         """
         output = []
@@ -220,9 +223,9 @@ def process():
         for item in output:
             print(item['clip_path'])  # 모든 클립 출력
 
+        # <h2 style='text-align: center; margin-bottom: 20px;'>🎥 V2T 검색 결과</h2><br><br>
         # ✅ HTML 출력 생성
         results_html = """
-        <h2 style='text-align: center; margin-bottom: 20px;'>🎥 V2T 검색 결과</h2><br><br>
         <div style='display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;'>
         """
 
