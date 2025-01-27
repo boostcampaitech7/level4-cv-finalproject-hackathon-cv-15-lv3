@@ -30,8 +30,8 @@ def generate_caption(model, processor, video_path, prompts, max_n_frames=8, max_
     return captions
 
 # Path setup
-video_base_path = "/data/ephemeral/home/min/clip"
-json_file_path = "/data/ephemeral/home/min/video.json"
+video_base_path = "/data/ephemeral/home/min/video_home"
+json_file_path = "/data/ephemeral/home/min/test2.json"
 model_path = "/data/ephemeral/home/min/Tarsier-7b"
 
 # Prompts for caption generation
@@ -53,32 +53,25 @@ with open(json_file_path, 'r') as f:
 # Start timing the entire process
 start_time = time.time()
 
-# Iterate through folders and process each clip
-for folder_name in os.listdir(video_base_path):
-    folder_path = os.path.join(video_base_path, folder_name)
-    if os.path.isdir(folder_path):
-        for clip_name in os.listdir(folder_path):
-            if clip_name.endswith(".mp4"):
-                clip_path = os.path.join(folder_path, clip_name)
-
-                # Match video_id and clip_id from JSON
-                for video in video_metadata:
-                    if video['video_id'] == folder_name and video['clip_id'] in clip_name:
-                        print(f"Processing clip: {clip_path}")
-                        
-                        # Start timing for this video
-                        clip_start_time = time.time()
-                        
-                        captions = generate_caption(model, processor, clip_path, prompts)
-                        
-                        # End timing for this video
-                        clip_end_time = time.time()
-                        print(f"Time taken for clip {clip_name}: {clip_end_time - clip_start_time:.2f} seconds")
-                        
-                        # Update the JSON structure with generated captions
-                        if 'caption' not in video:
-                            video['caption'] = {}
-                        video['caption'].update(captions)
+# Iterate through JSON metadata and process each clip
+for video in video_metadata:
+    video_path = os.path.join(video_base_path, video['video_path'])  # Adjusted to include video_path
+    if os.path.exists(video_path):
+        print(f"Processing clip: {video_path}")
+        
+        # Start timing for this video
+        clip_start_time = time.time()
+        
+        captions = generate_caption(model, processor, video_path, prompts)
+        
+        # End timing for this video
+        clip_end_time = time.time()
+        print(f"Time taken for clip {video['video_path']}: {clip_end_time - clip_start_time:.2f} seconds")
+        
+        # Update the JSON structure with generated captions
+        if 'caption' not in video:
+            video['caption'] = {}
+        video['caption'].update(captions)
 
 # Save the updated JSON back to file
 with open(json_file_path, 'w') as f:
