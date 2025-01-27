@@ -14,7 +14,7 @@ def save_search_result_clip(video_path, start_time, end_time, output_dir, clip_n
     os.makedirs(output_dir, exist_ok=True)
     
     try:
-        clip = VideoFileClip(video_path).subclip(start_time, end_time)
+        clip = VideoFileClip(video_path).subclipped(start_time, end_time)
         output_path = os.path.join(output_dir, f"{clip_name}.mp4")
         clip.write_videofile(output_path, codec='libx264', audio=False, verbose=False)
         clip.close()
@@ -35,18 +35,24 @@ def text_to_video_search(query_text, model_type="mplug"):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
 
+    # 세그멘테이션 설정 (내부에서 변경 가능)
+    segmentation_method = "fixed"  # "fixed", "scene", "shot" 중 선택
+    segmentation_params = {"segment_duration": 5}
+
     # 1. VideoCaptioningPipeline으로 전체 비디오 처리
     if model_type == "mplug":
         pipeline = MPLUGVideoCaptioningPipeline(
             keep_clips=KEEP_CLIPS,
-            segment_duration=SEGMENT_DURATION,
+            segmentation_method=segmentation_method,
+            segmentation_params=segmentation_params,
             mode="text2video"
         )
     else:  # tarsier
         pipeline = TarsierVideoCaptioningPipeline(
             model_path=model_path,
             keep_clips=KEEP_CLIPS,
-            segment_duration=SEGMENT_DURATION,
+            segmentation_method=segmentation_method,
+            segmentation_params=segmentation_params,
             mode="text2video"
         )
     
@@ -134,8 +140,8 @@ def main():
     parser = argparse.ArgumentParser(description='Video Processing Pipeline')
     parser.add_argument('mode', choices=['text2video', 'video2text'],
                       help='Choose pipeline mode: text2video or video2text')
-    parser.add_argument('--model', choices=['mplug', 'tarsier'], default='mplug',
-                      help='Choose model type: mplug or tarsier (default: mplug)')
+    parser.add_argument('--model', choices=['mplug', 'tarsier'], default='tarsier',
+                      help='Choose model type: mplug or tarsier (default: tarsier)')
     
     args = parser.parse_args()
     

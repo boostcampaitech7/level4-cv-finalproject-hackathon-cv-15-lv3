@@ -7,10 +7,12 @@ from decord import VideoReader, cpu
 from moviepy import VideoFileClip
 from utils.translator import DeepLTranslator, DeepGoogleTranslator
 from utils.tarsier_utils import load_model_and_processor
+from utils.video_split import create_segmenter
 
 class MPLUGVideoCaptioningPipeline:
-    def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False, segment_duration=5, mode='video2text'):
-        # Model initialization
+    def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False, 
+                 segmentation_method="fixed", segmentation_params=None, mode='video2text'):
+        # 기존 초기화 코드는 그대로 유지
         self.config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         self.model = AutoModel.from_pretrained(
             model_path,
@@ -19,31 +21,36 @@ class MPLUGVideoCaptioningPipeline:
             trust_remote_code=True
         )
         self.model.eval().cuda()
-
+        
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.processor = self.model.init_processor(self.tokenizer)
         self.MAX_NUM_FRAMES = 16
-
+        
         self.keep_clips = keep_clips
-        self.segment_duration = segment_duration
-
-        # Create output and clips directories with mode-specific paths
         self.mode = mode
+        
+        # 세그멘터 초기화 추가
+        segmentation_params = segmentation_params or {"segment_duration": 5}
+        self.segmenter = create_segmenter(
+            method=segmentation_method, 
+            **segmentation_params
+        )
+        
+        # 나머지 초기화 코드는 그대로 유지
         self.output_dir = f"output/{mode}"
         self.clips_dir = f"clips/{mode}"
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.clips_dir, exist_ok=True)
-
-        # Initialize video mapping structure
+        
         self.video_mapping = {}
-
-        # Initialize counters for IDs
         self.video_counter = 1
         self.clip_counter = 1
         self.video_name_to_id = {}
-
-        # Initialize translator
         self.translator = DeepGoogleTranslator()
+
+    def generate_segments(self, video_path):
+        """Generate segments for a video using the selected segmentation method"""
+        return self.segmenter.get_segments(video_path)
 
 
     def _extract_clip(self, video_path, start_time, end_time):
@@ -226,14 +233,21 @@ def find_video_file(videos_dir, video_name):
 
 
 class TarsierVideoCaptioningPipeline:
-    def __init__(self, model_path, keep_clips=False, segment_duration=5, mode='video2text'):
+    def __init__(self, model_path, keep_clips=False, segmentation_method="fixed", 
+                 segmentation_params=None, mode='video2text'):
         # Model initialization
         self.model, self.processor = load_model_and_processor(model_path, max_n_frames=8)
         self.model.eval()
         
         self.keep_clips = keep_clips
-        self.segment_duration = segment_duration
         self.mode = mode
+        
+        # 세그멘터 초기화
+        segmentation_params = segmentation_params or {}
+        self.segmenter = create_segmenter(
+            method=segmentation_method, 
+            **segmentation_params
+        )
         
         # Create output and clips directories
         self.output_dir = f"output/{mode}"
@@ -241,10 +255,15 @@ class TarsierVideoCaptioningPipeline:
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.clips_dir, exist_ok=True)
         
-        # Initialize translator and video mapping
-        self.translator = DeepGoogleTranslator()
-        self.video_mapping = {}
+        # Initialize counters and mappings
         self.clip_counter = 0
+        self.video_mapping = {}
+        
+        self.translator = DeepGoogleTranslator()
+
+    def generate_segments(self, video_path):
+        """Generate segments for a video using the selected segmentation method"""
+        return self.segmenter.get_segments(video_path)
 
     def generate_caption(self, video_path):
         """Generate caption for a video clip using Tarsier"""
@@ -366,11 +385,11 @@ class TarsierVideoCaptioningPipeline:
         for file in os.listdir(videos_dir):
             if file.endswith(('.mp4', '.avi', '.mov')):
                 video_path = os.path.join(videos_dir, file)
-                with VideoFileClip(video_path) as video:
-                    duration = video.duration
-                    for start_time in range(0, int(duration), self.segment_duration):
-                        end_time = min(start_time + self.segment_duration, duration)
-                        video_list.append((video_path, start_time, end_time))
+                # segmenter를 사용하여 세그먼트 생성
+                segments = self.segmenter.get_segments(video_path)
+                for start_time, end_time in segments:
+                    video_list.append((video_path, start_time, end_time))
+        
         return self.process_videos(video_list)
 
     def save_results(self, results):
