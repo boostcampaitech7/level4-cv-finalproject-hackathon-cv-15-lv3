@@ -81,3 +81,18 @@ class FaissSearch:
             results.append((caption_ko, D[0][idx], video_info))
 
         return results
+
+    def compute_similarity(self, query, caption, translator):
+        """쿼리와 캡션 간의 유사도 계산"""
+        # 쿼리를 영어로 번역
+        query_en = translator.translate_ko_to_en(query)
+        
+        # 텍스트를 임베딩 벡터로 변환
+        query_embedding = self.model.encode([query_en])[0]
+        caption_embedding = self.model.encode([caption])[0]
+        
+        # FAISS와 동일한 방식으로 유사도 계산
+        l2_distance = np.linalg.norm(query_embedding - caption_embedding)
+        similarity = 1 - l2_distance/2
+        
+        return max(0, min(1, similarity))  # 0~1 범위로 클리핑
