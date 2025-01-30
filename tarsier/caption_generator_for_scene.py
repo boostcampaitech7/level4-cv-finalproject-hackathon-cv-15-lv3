@@ -28,7 +28,7 @@ def generate_caption(model, processor, video_path, max_n_frames=8, max_new_token
 
 # 경로 설정
 video_base_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/videos"
-json_file_path = "/data/ephemeral/home/jiwan/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/video_segments.json"
+json_file_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/video_segments.json"
 model_path = "/data/ephemeral/home/Tarsier-7b"
 
 # 모델 및 프로세서 로드
@@ -46,19 +46,26 @@ start_time = time.time()
 for video in video_metadata:
     video_path = os.path.join(video_base_path, video['video_path'])  # video_path 포함하도록 조정
     if os.path.exists(video_path):
-        print(f"클립 처리 중: {video_path}")
-        
-        # 해당 비디오의 타이머 시작
-        clip_start_time = time.time()
-        
-        caption = generate_caption(model, processor, video_path)
-        
-        # 해당 비디오의 타이머 종료
-        clip_end_time = time.time()
-        print(f"클립 {video['video_path']} 처리 시간: {clip_end_time - clip_start_time:.2f}초")
-        
-        # 생성된 캡션으로 JSON 구조 업데이트
-        video['caption'] = caption  # 프롬프트 없이 캡션만 저장
+        try:
+            print(f"클립 처리 중: {video_path}")
+            
+            # 해당 비디오의 타이머 시작
+            clip_start_time = time.time()
+            
+            caption = generate_caption(model, processor, video_path)
+            
+            # 해당 비디오의 타이머 종료
+            clip_end_time = time.time()
+            print(f"클립 {video['video_path']} 처리 시간: {clip_end_time - clip_start_time:.2f}초")
+            
+            # 생성된 캡션으로 JSON 구조 업데이트
+            video['caption'] = caption  # 프롬프트 없이 캡션만 저장
+        except:
+            json_file_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/video_segments.json"
+            with open(json_file_path, "a") as f:
+                json.dump(video_metadata, f, indent=4)
+            print(f"오류가 발생하여 중간에 저장했습니다. {video_path}")
+            break
 
 # 업데이트된 JSON 파일 저장
 with open(json_file_path, 'w') as f:
@@ -67,4 +74,3 @@ with open(json_file_path, 'w') as f:
 # 전체 프로세스 타이머 종료
 end_time = time.time()
 print(f"총 소요 시간: {end_time - start_time:.2f}초")
-print("캡션이 생성되고 JSON이 성공적으로 업데이트되었습니다!")
