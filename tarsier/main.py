@@ -41,20 +41,27 @@ start_time = time.time()
 
 for video in video_segments:
     video_path = os.path.join(DESIGNATED_PATH, video['video_path'])
-    
     if os.path.exists(video_path):
-        print(f"▶️ 클립 처리 중: {video_path}")
-
-        # 캡션 생성
-        clip_start_time = time.time()
-        caption = generate_caption(model, processor, video_path)
-        clip_end_time = time.time()
-
-        print(f"⏳ 클립 {video['video_path']} 처리 시간: {clip_end_time - clip_start_time:.2f}초")
-
-        # JSON 구조 업데이트
-        video['caption'] = caption
-
+        try:
+            print(f"클립 처리 중: {video_path}")
+            
+            # 해당 비디오의 타이머 시작
+            clip_start_time = time.time()
+            
+            caption = generate_caption(model, processor, video_path)
+            
+            # 해당 비디오의 타이머 종료
+            clip_end_time = time.time()
+            print(f"클립 {video['video_path']} 처리 시간: {clip_end_time - clip_start_time:.2f}초")
+            
+            # 생성된 캡션으로 JSON 구조 업데이트
+            video['caption'] = caption  # 프롬프트 없이 캡션만 저장
+        except:
+            json_file_path = "./data/video_segments.json"
+            with open(json_file_path, "a") as f:
+                json.dump(video_metadata, f, indent=4)
+            print(f"오류가 발생하여 중간에 저장했습니다. {video_path}")
+            break
 # STEP 3: 캡션이 포함된 JSON 파일 저장
 with open(OUTPUT_JSON_FILE, "w", encoding="utf-8") as f:
     json.dump(video_segments, f, indent=4)
