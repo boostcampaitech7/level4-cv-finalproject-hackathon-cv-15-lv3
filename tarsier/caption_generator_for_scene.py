@@ -6,7 +6,7 @@ import torch
 
 # 비디오 클립에 대한 캡션을 생성하는 함수
 def generate_caption(model, processor, video_path, max_n_frames=8, max_new_tokens=512, top_p=1, temperature=0):
-    modified_prompt = "<video>\n비디오를 자세히 설명해 주세요."
+    modified_prompt = "<video>\n Describe the video in detail."
     
     # 수정된 프롬프트를 처리
     inputs = processor(modified_prompt, video_path, edit_prompt=True, return_prompt=True)
@@ -27,8 +27,8 @@ def generate_caption(model, processor, video_path, max_n_frames=8, max_new_token
     return output_text
 
 # 경로 설정
-video_base_path = "/data/ephemeral/home/jiwan/level4-cv-finalproject-hackathon-cv-15-lv3/pre-processing/YouTube-8M/data/videos"
-json_file_path = "/data/ephemeral/home/jiwan/level4-cv-finalproject-hackathon-cv-15-lv3/pre-processing/YouTube-8M/data/video_segments.json"
+video_base_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/videos"
+json_file_path = "/data/ephemeral/home/jiwan/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/video_segments.json"
 model_path = "/data/ephemeral/home/Tarsier-7b"
 
 # 모델 및 프로세서 로드
