@@ -10,13 +10,12 @@ def generate_caption(model, processor, video_path, max_n_frames=8, max_new_token
     
     # 수정된 프롬프트를 처리
     inputs = processor(modified_prompt, video_path, edit_prompt=True, return_prompt=True)
-    if 'prompt' in inputs:
-        inputs.pop('prompt')
+    inputs.pop('prompt', None)  # 'prompt' 키가 존재할 경우 제거
     inputs = {k: v.to(model.device) for k, v in inputs.items() if v is not None}
     
     outputs = model.generate(
         **inputs,
-        do_sample=True if temperature > 0 else False,
+        do_sample=temperature > 0,
         max_new_tokens=max_new_tokens,
         top_p=top_p,
         temperature=temperature,
@@ -44,28 +43,37 @@ start_time = time.time()
 
 # JSON 메타데이터를 순회하며 각 클립을 처리
 for video in video_metadata:
+    # print(video)
     video_path = os.path.join(video_base_path, video['video_path'])  # video_path 포함하도록 조정
-    if os.path.exists(video_path):
-        try:
-            print(f"클립 처리 중: {video_path}")
-            
-            # 해당 비디오의 타이머 시작
-            clip_start_time = time.time()
-            
-            caption = generate_caption(model, processor, video_path)
-            
-            # 해당 비디오의 타이머 종료
-            clip_end_time = time.time()
-            print(f"클립 {video['video_path']} 처리 시간: {clip_end_time - clip_start_time:.2f}초")
-            
-            # 생성된 캡션으로 JSON 구조 업데이트
-            video['caption'] = caption  # 프롬프트 없이 캡션만 저장
-        except:
-            json_file_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/video_segments.json"
-            with open(json_file_path, "a") as f:
-                json.dump(video_metadata, f, indent=4)
-            print(f"오류가 발생하여 중간에 저장했습니다. {video_path}")
-            break
+    if not os.path.exists(video_path):
+        print(f"비디오 파일이 존재하지 않습니다: {video_path}")
+        continue  # 비디오 파일이 없으면 다음으로 넘어감
+
+    try:
+        print(f"클립 처리 중: {video_path}")
+        
+        if video['caption']:
+            print(f"이미 캡션이 있습니다. {video_path}")
+            continue
+        
+        # 해당 비디오의 타이머 시작
+        clip_start_time = time.time()
+        
+        caption = generate_caption(model, processor, video_path)
+        
+        # 해당 비디오의 타이머 종료
+        clip_end_time = time.time()
+        print(f"클립 {video['video_path']} 처리 시간: {clip_end_time - clip_start_time:.2f}초")
+        
+        # 생성된 캡션으로 JSON 구조 업데이트
+        video['caption'] = caption  # 프롬프트 없이 캡션만 저장
+
+    except Exception as e:
+        print(f"오류가 발생했습니다: {e}")
+        with open(json_file_path, "w") as f:
+            json.dump(video_metadata, f, indent=4)
+        print(f"중간에 저장했습니다. {video_path}")
+        break
 
 # 업데이트된 JSON 파일 저장
 with open(json_file_path, 'w') as f:
