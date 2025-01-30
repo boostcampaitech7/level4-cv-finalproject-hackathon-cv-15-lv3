@@ -35,7 +35,7 @@ def create_clip_videos(input_video_path, output_dir_path):
     cap.release()
 
     min_scene_len_frames = int(1 * fps)
-
+    print("min_scene_len_frames",min_scene_len_frames)
     scene_list = detect(input_video_path, ContentDetector(min_scene_len=min_scene_len_frames))
     return scene_list, fps
 
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     category_name = "Movieclips"
 
     # feat: 경로 수정
-    root_video_path = "/data/ephemeral/home/data/YouTube-8M-video"
+    root_video_path = "/data/ephemeral/home/data/videos"
     annotation_path = "./data/YouTube-8M-clips-annatations"
     num_videos = len([f for f in os.listdir(root_video_path) if f.endswith(".mp4")])  # Count only MP4 files
     # num_videos = 1

@@ -56,29 +56,21 @@ def generate_caption(model, processor, video_path, prompt, max_n_frames=8, max_n
 # Example usage
 if __name__ == "__main__":
     model_path = "../../Tarsier-7b"  # 모델 경로
-    video_file = "../videos/clip_026.mp4"  # 비디오 파일 경로
+    video_file = "../dataset/videos/clip_026.mp4"  # 비디오 파일 경로
 
-    model, processor = load_model_and_processor(model_path, max_n_frames=8)
+    model, processor = load_model_and_processor(model_path, max_n_frames=16)
     
-    total_story = ""
-    instruction = "<video>\nWho are the main characters in this scene?"  # 프롬프트
-    caption = generate_caption(model, processor, video_file, instruction)
-    total_story += f"Main characters: {caption}\n"
-    print(f"Generated Caption: {caption}")
+    prompt = """ 
+    Imagine there are thousands of video clips. Based on the description of one specific visual scene, what search query would a viewer use to find that scene later? 
+    Focus on unique, descriptive details of the scene that stand out visually."
 
-    instruction = "<video>\nDescribe the behavior and interactions within a video."  # 프롬프트
-    caption = generate_caption(model, processor, video_file, instruction)
-    total_story += f"Behavior and interactions: {caption}\n"
-    print(f"Generated Caption: {caption}")
+    Example:
+    "Red car speeding through a dark tunnel."
+    "Person standing alone at the edge of a cliff during sunset."
     
-    instruction = "<video>\nDescribe the background of the scene"  # 프롬프트
+    Now, based on the scene, suggest one possible search query the viewer might use to find it.
+    """
+    instruction = f"<video>\n{prompt}"  # 프롬프트
     caption = generate_caption(model, processor, video_file, instruction)
-    total_story += f"Background: {caption}\n"
-    print(f"Generated Caption: {caption}")
-    
-    instruction = "<video>\nDescribe the video in detail."  # 프롬프트
-    caption = generate_caption(model, processor, video_file, instruction)
-    total_story += f"Video detail: {caption}\n"
     print(f"Generated Caption: {caption}")
 
-    print(total_story)
