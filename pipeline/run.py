@@ -31,9 +31,12 @@ def text_to_video_search(query_text, model_type="mplug"):
     # 설정 값
     VIDEOS_DIR = "../videos"
     KEEP_CLIPS = True
-    SEGMENT_DURATION = 5
     current_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
+
+    # 메타데이터 로드
+    with open('../videos/sample.json', 'r') as f:
+        video_metadata = {item['video_name']: item for item in json.load(f)}
 
     # 세그멘테이션 설정 (내부에서 변경 가능)
     segmentation_method = "fixed"  # "fixed", "scene", "shot" 중 선택
@@ -45,7 +48,8 @@ def text_to_video_search(query_text, model_type="mplug"):
             keep_clips=KEEP_CLIPS,
             segmentation_method=segmentation_method,
             segmentation_params=segmentation_params,
-            mode="text2video"
+            mode="text2video",
+            video_metadata=video_metadata
         )
     else:  # tarsier
         pipeline = TarsierVideoCaptioningPipeline(
@@ -53,7 +57,8 @@ def text_to_video_search(query_text, model_type="mplug"):
             keep_clips=KEEP_CLIPS,
             segmentation_method=segmentation_method,
             segmentation_params=segmentation_params,
-            mode="text2video"
+            mode="text2video",
+            video_metadata=video_metadata
         )
     
     # 전체 비디오 디렉토리 처리
@@ -76,11 +81,11 @@ def text_to_video_search(query_text, model_type="mplug"):
         print(f"📊 유사도: {similarity:.4f}")
         print(f"🎬 비디오: {os.path.basename(video_info['video_path'])}")
         print(f"⏰ 구간: {video_info['start_time']}초 ~ {video_info['end_time']}초")
-        print(f"🎯 클립 ID: {video_info['clip_id']}")
+        print(f"📝 제목: {video_info['title']}")
         print(f"📝 캡션: {caption}")
         
         # 검색 결과 클립 저장
-        clip_name = f"search_result_{i+1}_{video_info['clip_id']}"
+        clip_name = f"search_result_{i+1}_{os.path.basename(video_info['video_path']).split('.')[0]}"
         saved_path = save_search_result_clip(
             video_info['video_path'],
             video_info['start_time'],
@@ -98,17 +103,23 @@ def video_to_text_process(model_type="mplug"):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
 
+    # 메타데이터 로드
+    with open('../videos/sample.json', 'r', encoding='utf-8') as f:
+        video_metadata = {item['video_name']: item for item in json.load(f)}
+
     # 파이프라인 초기화 (모델 선택)
     if model_type == "mplug":
         pipeline = MPLUGVideoCaptioningPipeline(
             keep_clips=KEEP_CLIPS,
-            mode="video2text"
+            mode="video2text",
+            video_metadata=video_metadata
         )
     else:  # tarsier
         pipeline = TarsierVideoCaptioningPipeline(
             model_path=model_path,
             keep_clips=KEEP_CLIPS,
-            mode="video2text"
+            mode="video2text",
+            video_metadata=video_metadata
         )
     
     # JSON 파일에서 세그먼트 정보 로드

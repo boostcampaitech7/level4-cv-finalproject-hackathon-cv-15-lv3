@@ -71,12 +71,19 @@ class FaissSearch:
         results = []
         for idx, i in enumerate(I[0]):
             caption_ko = translator.translate_en_to_ko(self.captions[i])
+            
+            # video_XXX/00001.mp4 형식에서 video_XXX.mp4 추출
+            video_folder = self.data[i]['video_path'].split('/')[0]  # video_XXX
+            video_name = f"{video_folder}.mp4"  # video_XXX.mp4
+            real_video_path = os.path.join("../videos", video_name)
+            
             video_info = {
-                'video_path': self.data[i]['video_path'],
+                'video_path': real_video_path,
                 'video_id': self.data[i]['video_id'],
-                'clip_id': self.data[i]['clip_id'],
-                'start_time': self.data[i]['start_time'],
-                'end_time': self.data[i]['end_time']
+                'title': self.data[i]['title'],
+                'url': self.data[i]['url'],
+                'start_time': float(self.data[i]['start_time']),
+                'end_time': float(self.data[i]['end_time'])
             }
             results.append((caption_ko, D[0][idx], video_info))
 

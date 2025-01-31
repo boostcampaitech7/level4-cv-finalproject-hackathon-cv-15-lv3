@@ -11,7 +11,8 @@ from utils.video_split import create_segmenter
 
 class MPLUGVideoCaptioningPipeline:
     def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False, 
-                 segmentation_method="fixed", segmentation_params=None, mode='video2text'):
+                 segmentation_method="fixed", segmentation_params=None, mode='video2text',
+                 video_metadata=None):
         # 기존 초기화 코드는 그대로 유지
         self.config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         self.model = AutoModel.from_pretrained(
@@ -47,6 +48,8 @@ class MPLUGVideoCaptioningPipeline:
         self.clip_counter = 1
         self.video_name_to_id = {}
         self.translator = DeepGoogleTranslator()
+
+        self.video_metadata = video_metadata
 
     def generate_segments(self, video_path):
         """Generate segments for a video using the selected segmentation method"""
@@ -234,7 +237,7 @@ def find_video_file(videos_dir, video_name):
 
 class TarsierVideoCaptioningPipeline:
     def __init__(self, model_path, keep_clips=False, segmentation_method="fixed", 
-                 segmentation_params=None, mode='video2text'):
+                 segmentation_params=None, mode='video2text', video_metadata=None):
         # Model initialization
         self.model, self.processor = load_model_and_processor(model_path, max_n_frames=8)
         self.model.eval()
@@ -260,6 +263,8 @@ class TarsierVideoCaptioningPipeline:
         self.video_mapping = {}
         
         self.translator = DeepGoogleTranslator()
+
+        self.video_metadata = video_metadata
 
     def generate_segments(self, video_path):
         """Generate segments for a video using the selected segmentation method"""
@@ -309,15 +314,11 @@ class TarsierVideoCaptioningPipeline:
 
     def process_video(self, video_path, start_time, end_time):
         """Process a video segment and generate caption"""
-        video_id = os.path.splitext(os.path.basename(video_path))[0]
+        video_name = os.path.basename(video_path)  # video_XXX.mp4
         clip_id = f"clip_{self.clip_counter + 1}"
         
-        # Create video mapping entry
-        if video_id not in self.video_mapping:
-            self.video_mapping[video_id] = {
-                "video_path": video_path,
-                "clips": []
-            }
+        # 메타데이터 가져오기
+        metadata = self.video_metadata.get(video_name, {})
         
         # Extract clip
         clip_path = os.path.join(self.clips_dir, f"{clip_id}.mp4")
@@ -339,13 +340,14 @@ class TarsierVideoCaptioningPipeline:
         if self.mode == "video2text":
             caption_ko = self.translator.translate_en_to_ko(caption)
         
-        # Create result entry
+        # Create result entry with metadata
         result = {
-            "video_path": video_path,
-            "video_id": video_id,
-            "clip_id": clip_id,
-            "start_time": start_time,
-            "end_time": end_time,
+            "video_path": f"{os.path.splitext(video_name)[0]}/00001.mp4",  # video_XXX/00001.mp4 형식
+            "video_id": metadata.get('video_id', ''),
+            "title": metadata.get('title', ''),
+            "url": metadata.get('url', ''),
+            "start_time": f"{start_time:.2f}",
+            "end_time": f"{end_time:.2f}",
             "caption": caption
         }
         
@@ -353,7 +355,13 @@ class TarsierVideoCaptioningPipeline:
             result["caption_ko"] = caption_ko
         
         # Update video mapping
-        self.video_mapping[video_id]["clips"].append({
+        if video_name not in self.video_mapping:
+            self.video_mapping[video_name] = {
+                "video_path": video_path,
+                "clips": []
+            }
+        
+        self.video_mapping[video_name]["clips"].append({
             "clip_id": clip_id,
             "start_time": start_time,
             "end_time": end_time,
