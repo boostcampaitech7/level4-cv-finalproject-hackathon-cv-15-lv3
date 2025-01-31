@@ -1,6 +1,8 @@
 import os
 import json
 import torch
+from tqdm import tqdm
+from contextlib import contextmanager, redirect_stdout, redirect_stderr
 from PIL import Image
 from transformers import AutoTokenizer, AutoProcessor, AutoConfig, AutoModel
 from decord import VideoReader, cpu
@@ -8,6 +10,13 @@ from moviepy import VideoFileClip
 from utils.translator import DeepLTranslator, DeepGoogleTranslator
 from utils.tarsier_utils import load_model_and_processor
 from utils.video_split import create_segmenter
+
+@contextmanager
+def suppress_output():
+    """모든 출력을 억제하는 컨텍스트 매니저"""
+    with open(os.devnull, 'w') as devnull:
+        with redirect_stdout(devnull), redirect_stderr(devnull):
+            yield
 
 class MPLUGVideoCaptioningPipeline:
     def __init__(self, model_path='mPLUG/mPLUG-Owl3-7B-240728', keep_clips=False, 
@@ -388,15 +397,30 @@ class TarsierVideoCaptioningPipeline:
     def process_directory(self, videos_dir):
         """Process all videos in directory"""
         video_list = []
-        for file in os.listdir(videos_dir):
-            if file.endswith(('.mp4', '.avi', '.mov')):
-                video_path = os.path.join(videos_dir, file)
-                # segmenter를 사용하여 세그먼트 생성
-                segments = self.segmenter.get_segments(video_path)
-                for start_time, end_time in segments:
-                    video_list.append((video_path, start_time, end_time))
+        print("📂 비디오 목록 생성 중...")
         
-        return self.process_videos(video_list)
+        # 비디오 파일 목록 생성
+        video_files = [f for f in os.listdir(videos_dir) if f.endswith(('.mp4', '.avi', '.mov'))]
+        for file in tqdm(video_files, desc="세그먼트 분할"):
+            video_path = os.path.join(videos_dir, file)
+            segments = self.segmenter.get_segments(video_path)
+            for start_time, end_time in segments:
+                video_list.append((video_path, start_time, end_time))
+        
+        print(f"총 {len(video_files)}개 비디오, {len(video_list)}개 세그먼트 발견")
+        
+        # 비디오 처리
+        results = []
+        pbar = tqdm(total=len(video_list), desc="비디오 처리")
+        for video_path, start_time, end_time in video_list:
+            with suppress_output():
+                result = self.process_video(video_path, start_time, end_time)
+                if result:
+                    results.append(result)
+            pbar.update(1)
+        pbar.close()
+        
+        return results
 
     def save_results(self, results):
         """Save results to JSON files"""

@@ -2,6 +2,16 @@ from abc import ABC, abstractmethod
 import cv2
 from moviepy import VideoFileClip
 from scenedetect import detect, ContentDetector
+from contextlib import contextmanager, redirect_stdout, redirect_stderr
+import os
+
+@contextmanager
+def suppress_output():
+    """모든 출력을 억제하는 컨텍스트 매니저"""
+    with open(os.devnull, 'w') as devnull:
+        with redirect_stdout(devnull), redirect_stderr(devnull):
+            yield
+
 
 class VideoSegmenter(ABC):
     """비디오 세그멘테이션을 위한 기본 클래스"""
@@ -25,16 +35,17 @@ class FixedDurationSegmenter(VideoSegmenter):
         self.segment_duration = segment_duration
     
     def get_segments(self, video_path):
-        with VideoFileClip(video_path) as video:
-            duration = video.duration
-            segments = []
-            start_time = 0
-            
-            while start_time < duration:
-                end_time = min(start_time + self.segment_duration, duration)
-                if end_time - start_time >= 1:  # 최소 1초 이상인 세그먼트만 포함
-                    segments.append((start_time, end_time))
-                start_time = end_time
+        with suppress_output():
+            with VideoFileClip(video_path) as video:
+                duration = video.duration
+                segments = []
+                start_time = 0
+                
+                while start_time < duration:
+                    end_time = min(start_time + self.segment_duration, duration)
+                    if end_time - start_time >= 1:  # 최소 1초 이상인 세그먼트만 포함
+                        segments.append((start_time, end_time))
+                    start_time = end_time
                 
         return segments
 
