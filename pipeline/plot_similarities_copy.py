@@ -8,23 +8,37 @@ from utils.translator import DeepGoogleTranslator
 def plot_similarity_graph(video_name, query, timestamps, similarities, gt_start=None, gt_end=None, db_path=None):
     """유사도 그래프 생성 및 저장"""
     plt.figure(figsize=(12, 6))
-    plt.plot(timestamps, similarities, marker='o')
+    
+    # 선 그래프
+    plt.plot(timestamps, similarities, marker='o', alpha=0.5, linestyle='--', label='Point-wise similarity')
+    
+    # 계단 형태의 구간별 그래프
+    # 마지막 구간의 끝 시간 계산
+    if len(timestamps) > 1:
+        segment_duration = timestamps[1] - timestamps[0]
+    else:
+        segment_duration = 5  # 기본값
+    end_times = timestamps[1:] + [timestamps[-1] + segment_duration]
+    
+    plt.hlines(y=similarities, xmin=timestamps, xmax=end_times, 
+              colors='red', linewidth=2, label='Segment similarity')
     
     # 정답 구간이 있으면 하이라이트
     if gt_start is not None and gt_end is not None:
-        plt.axvspan(gt_start, gt_end, color='red', alpha=0.3, label='Ground Truth')
+        plt.axvspan(gt_start, gt_end, color='green', alpha=0.2, label='Ground Truth')
     
     plt.title(f'Similarity Graph for "{video_name}"')
     plt.xlabel('Time (seconds)')
     plt.ylabel('Similarity Score')
     plt.grid(True)
+    plt.legend()
     
     # 파일 이름에 쿼리 포함하여 저장
     output_dir = f"output/similarity_graphs/{db_path.split('/')[-1].split('.')[0]}"
     os.makedirs(output_dir, exist_ok=True)
     
     # 파일 이름으로 사용할 수 있게 쿼리 문자열 처리
-    safe_query = "".join(x for x in query if x.isalnum() or x in [' ', '_'])[:50]  # 길이 제한
+    safe_query = "".join(x for x in query if x.isalnum() or x in [' ', '_'])[:55]
     safe_query = safe_query.replace(' ', '_')
     
     plt.savefig(os.path.join(output_dir, f"{video_name}__{safe_query}.png"), 
@@ -84,7 +98,7 @@ def analyze_video_similarities(excel_path, db_path):
 def main():
     # 파일 경로 설정
     excel_path = "evaluation_dataset_jhuni_test.xlsx"
-    db_path = "output/text2video/test_db_d5_t2v_captions.json"
+    db_path = "output/text2video/test_db_d1_t2v_captions.json"
     
     # 분석 실행
     analyze_video_similarities(excel_path, db_path)
