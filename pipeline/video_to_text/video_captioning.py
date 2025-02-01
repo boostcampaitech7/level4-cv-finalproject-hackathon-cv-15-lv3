@@ -324,13 +324,14 @@ class TarsierVideoCaptioningPipeline:
     def process_video(self, video_path, start_time, end_time):
         """Process a video segment and generate caption"""
         video_name = os.path.basename(video_path)  # video_XXX.mp4
+        video_id = video_name.split('_')[1]  # XXX 부분 추출
         clip_id = f"clip_{self.clip_counter + 1}"
         
         # 메타데이터 가져오기
         metadata = self.video_metadata.get(video_name, {})
         
         # Extract clip
-        clip_path = os.path.join(self.clips_dir, f"{clip_id}.mp4")
+        clip_path = os.path.join(self.clips_dir, f"{video_id}_{clip_id}.mp4")
         try:
             with VideoFileClip(video_path) as video:
                 clip = video.subclipped(start_time, end_time)
@@ -351,8 +352,8 @@ class TarsierVideoCaptioningPipeline:
         
         # Create result entry with metadata
         result = {
-            "video_path": f"{os.path.splitext(video_name)[0]}/00001.mp4",  # video_XXX/00001.mp4 형식
-            "video_id": metadata.get('video_id', ''),
+            "video_path": f"video_{video_id}/{self.clip_counter:05d}.mp4",  # video_XXX/00001.mp4 형식
+            "video_id": metadata.get('video_id', video_id),  # 메타데이터에서 없으면 파일명에서 추출한 ID 사용
             "title": metadata.get('title', ''),
             "url": metadata.get('url', ''),
             "start_time": f"{start_time:.2f}",
@@ -364,14 +365,14 @@ class TarsierVideoCaptioningPipeline:
             result["caption_ko"] = caption_ko
         
         # Update video mapping
-        if video_name not in self.video_mapping:
-            self.video_mapping[video_name] = {
+        if video_id not in self.video_mapping:
+            self.video_mapping[video_id] = {
                 "video_path": video_path,
                 "clips": []
             }
         
-        self.video_mapping[video_name]["clips"].append({
-            "clip_id": clip_id,
+        self.video_mapping[video_id]["clips"].append({
+            "clip_id": f"{self.clip_counter:05d}",
             "start_time": start_time,
             "end_time": end_time,
             "clip_path": clip_path

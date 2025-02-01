@@ -28,7 +28,7 @@ def build_video_db(model_type="mplug", segmentation_method="fixed", segmentation
     print("⚙️ 설정 로드 중...")
     VIDEOS_DIR = "/data/ephemeral/home/jaehuni/split_exp/videos"
     KEEP_CLIPS = False
-    OUTPUT_DIR = "output/text2video_fixed_5"
+    OUTPUT_DIR = "output/text2video"
     current_dir = os.path.dirname(os.path.abspath(__file__))
     TARSIER_MODEL_PATH = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
     
@@ -77,7 +77,7 @@ def build_video_db(model_type="mplug", segmentation_method="fixed", segmentation
     # 2. 임베딩 생성 및 저장
     print("\n🔍 FAISS 임베딩 생성 중...")
     embedding_time = time.time()
-    json_path = os.path.join(OUTPUT_DIR, "t2v_clips.json")  # 파일명 변경
+    json_path = os.path.join(OUTPUT_DIR, "t2v_captions.json")
     faiss_search = FaissSearch(json_path=json_path)
     print(f"⏱️ 임베딩 생성 완료 ({time.time() - embedding_time:.1f}초)")
     
