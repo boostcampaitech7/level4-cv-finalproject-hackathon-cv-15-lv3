@@ -4,6 +4,7 @@ data/
 clips/
 output/
 csv/
+results/
 .DS_Store
 
 __pycache__/

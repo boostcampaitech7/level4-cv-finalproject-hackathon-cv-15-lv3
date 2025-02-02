@@ -162,8 +162,68 @@ def compare_db_performance(excel_path, db_configs):
     
     return summary
 
+def visualize_and_save_results(summary, output_dir="results/plots"):
+    """성능 지표를 시각화하고 이미지로 저장"""
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    # 결과 저장 디렉토리 생성
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # 기본 스타일 설정
+    plt.style.use('default')  # seaborn 대신 default 스타일 사용
+    sns.set_theme(style="whitegrid")  # seaborn 그리드 스타일 적용
+    
+    # 1. 모든 지표를 하나의 막대 그래프로
+    metrics = list(next(iter(summary.values())).keys())
+    db_names = list(summary.keys())
+    
+    fig, ax = plt.subplots(figsize=(15, 8))
+    x = np.arange(len(metrics))
+    width = 0.25
+    
+    for i, db_name in enumerate(db_names):
+        means = [summary[db_name][metric]['mean'] for metric in metrics]
+        ax.bar(x + i*width, means, width, label=db_name)
+    
+    ax.set_ylabel('Score')
+    ax.set_title('Performance Metrics Comparison')
+    ax.set_xticks(x + width)
+    ax.set_xticklabels(metrics, rotation=45)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, 'overall_comparison.png'), dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    # 2. 각 지표별 상세 비교 (mean, std, min, max)
+    for metric in metrics:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        data = {
+            'DB': [],
+            'Value': [],
+            'Stat': []
+        }
+        
+        for db_name in db_names:
+            stats = summary[db_name][metric]
+            for stat_name, value in stats.items():
+                data['DB'].append(db_name)
+                data['Value'].append(value)
+                data['Stat'].append(stat_name)
+        
+        df = pd.DataFrame(data)
+        sns.barplot(data=df, x='DB', y='Value', hue='Stat', ax=ax)
+        
+        ax.set_title(f'{metric} Statistics')
+        ax.set_ylabel('Value')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, f'{metric}_stats.png'), dpi=300, bbox_inches='tight')
+        plt.close()
+
 def main():
-    excel_path = "evaluation_dataset_jhuni_test.xlsx"
+    excel_path = "csv/evaluation_dataset_jhuni_test.xlsx"
     db_configs = [
         ("output/text2video/test_db_d5_t2v_captions.json", "t2v"),
         ("output/text2video/test_db_d1_t2v_captions.json", "t2v"),
@@ -172,7 +232,7 @@ def main():
     
     summary = compare_db_performance(excel_path, db_configs)
     
-    # 결과 출력
+    # 결과 출력 (터미널)
     print("\n📊 Performance Summary:")
     for db_name, metrics in summary.items():
         print(f"\n=== {db_name} ===")
@@ -180,6 +240,10 @@ def main():
             print(f"\n{metric_name}:")
             for stat_name, value in stats.items():
                 print(f"  {stat_name}: {value:.4f}")
+    
+    # 결과 시각화 및 저장
+    visualize_and_save_results(summary)
+    print("\n📈 Plots saved in results/plots directory")
 
 if __name__ == "__main__":
     main()
