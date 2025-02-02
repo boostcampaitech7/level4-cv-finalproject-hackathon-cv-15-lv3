@@ -3,6 +3,7 @@ audios/
 data/
 clips/
 output/
+csv/
 .DS_Store
 
 __pycache__/
