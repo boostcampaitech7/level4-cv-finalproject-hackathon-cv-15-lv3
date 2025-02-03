@@ -1,106 +1,73 @@
-import faiss
 import json
-import os
-import numpy as np
-import requests
-from sentence_transformers import SentenceTransformer
+import torch
+import torch.nn.functional as F
+from transformers import AutoModel, AutoTokenizer
+from tqdm import tqdm
+from torch.utils.data import DataLoader
 
-class DeepLTranslator:
-    """DeepL API를 사용한 한국어 ↔ 영어 번역기 클래스"""
-    
-    def __init__(self, api_key):
-        self.api_key = api_key
-        self.url = "https://api-free.deepl.com/v2/translate"
+# 상수 설정
+MAX_LENGTH = 1024  # 입력 길이 제한 (기존 32768 → 1024로 줄여 OOM 방지)
+BATCH_SIZE = 1  # 배치 크기 (적절한 값으로 조정 가능)
 
-    def translate(self, text, source_lang, target_lang):
-        """DeepL API를 사용하여 번역 수행"""
-        params = {
-            "auth_key": self.api_key,
-            "text": text,
-            "source_lang": source_lang,
-            "target_lang": target_lang
-        }
-        response = requests.post(self.url, data=params)
-        
-        if response.status_code != 200:
-            print(f"🚨 번역 API 오류: {response.status_code} - {response.text}")
-            return None
-        
-        return response.json().get("translations", [{}])[0].get("text", "")
+class Embedding:
+    def __init__(self, model_name="dunzhang/stella_en_1.5B_v5"):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True).to(self.device)
 
-    def translate_ko_to_en(self, text):
-        return self.translate(text, "KO", "EN")
+    def get_embedding(self, text, instruction=""):
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_LENGTH).to(self.device)
 
-    def translate_en_to_ko(self, text):
-        return self.translate(text, "EN", "KO")
+        with torch.no_grad():
+            output = self.model(**inputs)
 
+        # Debug: Print available keys in the output
+        # print("Model output keys:", output.keys())
 
-class FaissSearch:
-    """FAISS 기반 검색 시스템 클래스"""
-
-    def __init__(self, json_path, model_name="all-MiniLM-L6-v2", use_gpu=True):
-        self.json_path = json_path
-        self.model = SentenceTransformer(model_name)
-
-        # ✅ JSON 데이터 로드 또는 생성
-        if os.path.exists(self.json_path):
-            self._load_json_data()
+        if "sentence_embeddings" in output:
+            embedding = output["sentence_embeddings"]
+        elif "last_hidden_state" in output:
+            embedding = output['last_hidden_state']
         else:
-            print("📂 JSON 파일이 존재하지 않음. 새로운 임베딩을 생성합니다...")
-            self.generate_and_save_embeddings("/data/ephemeral/home/embedding/updated_Movieclips_annotations.json")
-            self._load_json_data()
+            raise ValueError("모델 출력에서 sentence_embeddings 또는 last_hidden_state를 찾을 수 없습니다.")
 
-        # ✅ FAISS 인덱스 초기화
-        self._initialize_faiss(use_gpu)
+        return F.normalize(embedding.clone().detach(), p=2, dim=1).cpu().tolist()[0]
 
-    def _load_json_data(self):
-        """JSON 파일을 로드하여 캡션 및 임베딩을 가져옴"""
-        with open(self.json_path, "r", encoding="utf-8") as f:
-            self.data = json.load(f)
-        self.captions = [entry["caption"] for entry in self.data]
-        self.embeddings = np.array([entry["embedding"] for entry in self.data], dtype=np.float32)
-        faiss.normalize_L2(self.embeddings)
+    @staticmethod
+    def load_json(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
 
-    def _initialize_faiss(self, use_gpu):
-        """FAISS 인덱스를 생성 및 초기화"""
-        self.dimension = self.embeddings.shape[1]
-        self.res = faiss.StandardGpuResources() if use_gpu else None
-        self.index = faiss.IndexFlatIP(self.dimension)
-        self.gpu_index = faiss.index_cpu_to_gpu(self.res, 0, self.index) if use_gpu else self.index
-        self.gpu_index.add(self.embeddings)
+    @staticmethod
+    def save_json(data, file_path):
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
-    def generate_and_save_embeddings(self, source_json_path):
-        """새로운 임베딩을 생성하여 JSON 파일로 저장"""
-        if not os.path.exists(source_json_path):
-            print(f"🚨 오류: {source_json_path} 파일을 찾을 수 없습니다!")
-            return
-        
-        print("🔄 캡션을 임베딩하고 JSON에 저장 중...")
+    def process_embeddings(self, input_json_path, output_json_path):
+        data = self.load_json(input_json_path)
+        captions = [entry["caption"] for entry in data if "caption" in entry]
+        caption_loader = DataLoader(captions, batch_size=BATCH_SIZE, shuffle=False)
 
-        with open(source_json_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        print(f"총 {len(data)}개의 caption 임베딩을 생성합니다...")
 
+        embeddings = []
+        for batch in tqdm(caption_loader, desc="Processing Captions", unit="batch"):
+            batch_embeddings = [self.get_embedding(text) for text in batch]
+            embeddings.extend(batch_embeddings)
+            torch.cuda.empty_cache()
+
+        idx = 0
         for entry in data:
-            caption_text = entry["caption"]
-            embedding = self.model.encode(caption_text).tolist()  # NumPy 배열을 리스트로 변환
-            entry["embedding"] = embedding
+            if "caption" in entry:
+                entry["embedding"] = embeddings[idx]
+                idx += 1
 
-        with open(self.json_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+        self.save_json(data, output_json_path)
+        print(f"\n✅ Embedding 추가 완료! 결과가 {output_json_path}에 저장되었습니다.")
 
-        print(f"✅ 새로운 임베딩 저장 완료! → {self.json_path}")
+# Example usage
+input_json_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/evaluation/DB_v1.json"
+output_json_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/evaluation/DB_v1_embedding.json"
 
-    def find_similar_captions(self, input_text, translator, top_k=3):
-        """한국어 입력 → 영어 변환 → FAISS 검색 → 한국어 변환 후 결과 반환"""
-        translated_query = translator.translate_ko_to_en(input_text)
-        if not translated_query:
-            print("🚨 번역 실패! 입력 텍스트를 확인하세요.")
-            return []
-
-        query_embedding = self.model.encode([translated_query]).astype(np.float32)
-        faiss.normalize_L2(query_embedding)
-
-        D, I = self.gpu_index.search(query_embedding, top_k)
-        results = [(translator.translate_en_to_ko(self.captions[i]), D[0][idx]) for idx, i in enumerate(I[0])]
-
-        return results
+embedding = Embedding()
+embedding.process_embeddings(input_json_path, output_json_path)
