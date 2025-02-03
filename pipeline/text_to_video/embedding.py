@@ -71,13 +71,35 @@ class FaissSearch:
         results = []
         for idx, i in enumerate(I[0]):
             caption_ko = translator.translate_en_to_ko(self.captions[i])
+            
+            # video_XXX/00001.mp4 형식에서 video_XXX.mp4 추출
+            video_folder = self.data[i]['video_path'].split('/')[0]  # video_XXX
+            video_name = f"{video_folder}.mp4"  # video_XXX.mp4
+            real_video_path = os.path.join("../videos", video_name)
+            
             video_info = {
-                'video_path': self.data[i]['video_path'],
+                'video_path': real_video_path,
                 'video_id': self.data[i]['video_id'],
-                'clip_id': self.data[i]['clip_id'],
-                'start_time': self.data[i]['start_time'],
-                'end_time': self.data[i]['end_time']
+                'title': self.data[i]['title'],
+                'url': self.data[i]['url'],
+                'start_time': float(self.data[i]['start_time']),
+                'end_time': float(self.data[i]['end_time'])
             }
             results.append((caption_ko, D[0][idx], video_info))
 
         return results
+
+    def compute_similarity(self, query, caption, translator):
+        """쿼리와 캡션 간의 유사도 계산"""
+        # 쿼리를 영어로 번역
+        query_en = translator.translate_ko_to_en(query)
+        
+        # 텍스트를 임베딩 벡터로 변환
+        query_embedding = self.model.encode([query_en])[0]
+        caption_embedding = self.model.encode([caption])[0]
+        
+        # FAISS와 동일한 방식으로 유사도 계산
+        l2_distance = np.linalg.norm(query_embedding - caption_embedding)
+        similarity = 1 - l2_distance/2
+        
+        return max(0, min(1, similarity))  # 0~1 범위로 클리핑
