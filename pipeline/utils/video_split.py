@@ -49,29 +49,74 @@ class FixedDurationSegmenter(VideoSegmenter):
                 
         return segments
 
+# class SceneDetectionSegmenter(VideoSegmenter):
+#     """Scene detection을 사용하여 비디오를 나누는 세그멘터"""
+    
+#     def __init__(self, adaptive_threshold=3.0, min_scene_len=30):
+#         """
+#         Args:
+#             adaptive_threshold (float): 장면 변화 감지 민감도 (낮을수록 더 민감)
+#                                      - 2.0: 더 민감한 감지
+#                                      - 3.0: 기본값, 일반적인 용도
+#                                      - 4.0: 덜 민감한 감지
+#             min_scene_len (int): 최소 장면 길이 (프레임 단위)
+#                                - 15: 기본값 (~0.5초 @ 30fps)
+#                                - 10: 짧은 장면 허용
+#                                - 30: 긴 장면 보장
+#         """
+#         self.adaptive_threshold = adaptive_threshold
+#         self.min_scene_len = min_scene_len
+    
+#     def get_segments(self, video_path):
+#         try:
+#             # Scene detection 실행
+#             scenes = detect(video_path, AdaptiveDetector(
+#                 adaptive_threshold=self.adaptive_threshold,
+#                 min_scene_len=self.min_scene_len
+#             ))
+            
+#             # (start_time, end_time) 형태로 변환
+#             segments = [(scene[0].get_seconds(), scene[1].get_seconds()) 
+#                        for scene in scenes]
+            
+#             # 세그먼트가 없는 경우 처리
+#             if not segments:
+#                 print(f"⚠️ No scenes detected in {video_path}, using entire video")
+#                 with VideoFileClip(video_path) as video:
+#                     segments = [(0, video.duration)]
+            
+#             return segments
+            
+#         except Exception as e:
+#             print(f"🚨 Error during scene detection for {video_path}: {str(e)}")
+#             # 오류 발생 시 전체 비디오를 하나의 세그먼트로
+#             with VideoFileClip(video_path) as video:
+#                 return [(0, video.duration)]
+
 class SceneDetectionSegmenter(VideoSegmenter):
     """Scene detection을 사용하여 비디오를 나누는 세그멘터"""
     
-    def __init__(self, adaptive_threshold=3.0, min_scene_len=30):
+    def __init__(self, threshold=27.0, min_scene_len=30):
         """
         Args:
-            adaptive_threshold (float): 장면 변화 감지 민감도 (낮을수록 더 민감)
-                                     - 2.0: 더 민감한 감지
-                                     - 3.0: 기본값, 일반적인 용도
-                                     - 4.0: 덜 민감한 감지
+            threshold (float): 장면 변화 감지를 위한 임계값
+                             - 낮을수록 더 민감하게 감지
+                             - 27.0: 기본값
+                             - 20.0: 더 민감한 감지
+                             - 35.0: 덜 민감한 감지
             min_scene_len (int): 최소 장면 길이 (프레임 단위)
                                - 15: 기본값 (~0.5초 @ 30fps)
                                - 10: 짧은 장면 허용
                                - 30: 긴 장면 보장
         """
-        self.adaptive_threshold = adaptive_threshold
+        self.threshold = threshold
         self.min_scene_len = min_scene_len
     
     def get_segments(self, video_path):
         try:
             # Scene detection 실행
-            scenes = detect(video_path, AdaptiveDetector(
-                adaptive_threshold=self.adaptive_threshold,
+            scenes = detect(video_path, ContentDetector(
+                threshold=self.threshold,
                 min_scene_len=self.min_scene_len
             ))
             

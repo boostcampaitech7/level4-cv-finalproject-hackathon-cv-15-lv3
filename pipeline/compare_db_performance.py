@@ -223,11 +223,12 @@ def visualize_and_save_results(summary, output_dir="results/plots"):
         plt.close()
 
 def main():
-    excel_path = "csv/evaluation_dataset_jhuni_test.xlsx"
+    excel_path = "csv/evaluation_dataset_v2.xlsx"
     db_configs = [
-        ("output/text2video/test_db_d5_t2v_captions.json", "t2v"),
-        ("output/text2video/test_db_d1_t2v_captions.json", "t2v"),
-        ("output/text2video/clips_embedding.json", "clips")
+        ("output/text2video/test2_db_d5_t2v_captions.json", "clips"),
+        ("output/text2video/test2_db_s_t2v_captions.json", "clips"),
+        ("output/text2video/test2_db_pya_t2v_captions.json", "clips"),
+        ("output/text2video/test2_db_pyc_t2v_captions.json", "clips"),
     ]
     
     summary = compare_db_performance(excel_path, db_configs)
