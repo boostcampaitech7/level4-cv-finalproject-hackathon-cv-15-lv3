@@ -103,3 +103,45 @@ class FaissSearch:
         similarity = 1 - l2_distance/2
         
         return max(0, min(1, similarity))  # 0~1 범위로 클리핑
+
+    def update_faiss_index(self):
+        """🔄 학습 진행 후 FAISS 인덱스를 업데이트하는 함수"""
+        print("🔄 FAISS 인덱스 업데이트 중...")
+        
+        # 최신 모델을 활용하여 모든 caption 임베딩 다시 생성
+        self.embeddings = np.array([self.model.encode(entry["caption"]).tolist() for entry in self.data], dtype=np.float32)
+        faiss.normalize_L2(self.embeddings)
+
+        # 기존 FAISS 인덱스 초기화 후 갱신
+        self.index.reset()
+        self.index.add(self.embeddings)
+
+        print("✅ FAISS 인덱스 업데이트 완료!")
+
+    def find_similar_captions_updated(self, input_text, top_k=3):
+        """🔄 최신 FAISS 인덱스를 사용한 검색"""
+        query_embedding = self.model.encode([input_text]).astype(np.float32)
+        faiss.normalize_L2(query_embedding)
+
+        D, I = self.index.search(query_embedding, top_k)
+
+        results = []
+        for idx, i in enumerate(I[0]):
+            results.append({
+                "caption": self.captions[i],
+                "score": D[0][idx],
+                "video_id": self.data[i]['video_id'],
+                "video_path": self.data[i]['video_path']
+            })
+
+        return results
+
+    def compute_similarity_updated(self, query, caption):
+        """🔄 최신 모델을 활용한 유사도 계산"""
+        query_embedding = self.model.encode([query])[0]
+        caption_embedding = self.model.encode([caption])[0]
+
+        l2_distance = np.linalg.norm(query_embedding - caption_embedding)
+        similarity = 1 - l2_distance / 2
+        
+        return max(0, min(1, similarity))  # 0~1 범위로 클리핑
