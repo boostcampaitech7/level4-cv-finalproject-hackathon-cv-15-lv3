@@ -30,7 +30,11 @@ def evaluate_search_performance(excel_path, db_path, top_k=5):
         gt_start = row['StartTime']
         gt_end = row['EndTime']
         
-        print(f"\n🔍 쿼리 평가 중: {query}")
+        # 쿼리 번역
+        query_en = translator.translate_ko_to_en(query)
+        print(f"\n🔍 쿼리 평가 중:")
+        print(f"   원본: {query}")
+        print(f"   번역: {query_en}")
         
         # 전체 DB에서 검색
         results = faiss_search.find_similar_captions(query, translator, top_k=top_k)
@@ -59,32 +63,32 @@ def evaluate_search_performance(excel_path, db_path, top_k=5):
                     max_similarity = similarity
                     break
         
-        # 결과 저장
+        # 결과 저장 - similarity를 float로 변환
         result_info = {
             'query': query,
             'video_id': video_id,
             'found': found,
             'rank': rank,
-            'similarity': max_similarity,
-            'gt_start': gt_start,
-            'gt_end': gt_end
+            'similarity': float(max_similarity),  # float32를 float로 변환
+            'gt_start': float(gt_start),         # 혹시 모를 다른 float32 값들도 변환
+            'gt_end': float(gt_end)
         }
         metrics['detailed_results'].append(result_info)
         
-        # 통계 업데이트
+        # 통계 업데이트 - similarity를 float로 변환
         if found:
             metrics['found_in_topk'] += 1
             metrics['mean_rank'] += rank
-            metrics['mean_similarity'] += max_similarity
+            metrics['mean_similarity'] += float(max_similarity)
         
         # 결과 출력
         status = "✅ 발견" if found else "❌ 미발견"
         print(f"{status} (순위: {rank if found else 'N/A'}, 유사도: {max_similarity:.4f})")
     
-    # 최종 통계 계산
+    # 최종 통계 계산 - 결과를 float로 변환
     if metrics['found_in_topk'] > 0:
-        metrics['mean_rank'] /= metrics['found_in_topk']
-        metrics['mean_similarity'] /= metrics['found_in_topk']
+        metrics['mean_rank'] = float(metrics['mean_rank'] / metrics['found_in_topk'])
+        metrics['mean_similarity'] = float(metrics['mean_similarity'] / metrics['found_in_topk'])
     
     # 결과 출력
     print("\n📊 최종 평가 결과:")
@@ -116,7 +120,7 @@ def main():
     
     for db_path in db_configs:
         print(f"\n🎯 DB 평가 중: {db_path}")
-        evaluate_search_performance(excel_path, db_path, top_k=5)
+        evaluate_search_performance(excel_path, db_path, top_k=10)
 
 if __name__ == "__main__":
     main()
