@@ -9,45 +9,56 @@ from text_to_video.embedding import FaissSearch
 from contra_dataloader import SupervisedDataset
 from loss import ContrastiveLoss
 
-def supervised_learning(gt_data_path, save_path, batch_size, epochs, learning_rate, top_k):
+def supervised_learning(sampling_db_path, save_path, batch_size, epochs, learning_rate, top_k):
     """Supervised Learning을 수행하고 모델 가중치를 저장"""
     
-    # 장치 설정
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # 모델 로드
+    # Sentence Transformer 모델 및 옵티마이저 초기화
     print("모델 로드 중...")
     model = SentenceTransformer("all-MiniLM-L6-v2").to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     criterion_loss = ContrastiveLoss()
 
-    # GT-caption 데이터 로드
+    # GT-DB 로드
     print("GT 데이터 로드 중...")
-    with open(gt_data_path, "r", encoding="utf-8") as f:
-        gt_data = json.load(f)
-    print(f"GT 데이터 로드 완료: {len(gt_data)}개의 항목")
+    with open(sampling_db_path, "r", encoding="utf-8") as f:
+        database = json.load(f)
+    print(f"GT 데이터 로드 완료: {len(database)}개의 항목")
 
-    # FAISS 검색 시스템 초기화
-    print("FAISS 검색 시스템 초기화 중...")
-    faiss_search = FaissSearch(gt_data_path)
+    caption_dict = {}
+    print("Caption 추출 중...")
+    for entry in database:
+        video_path = entry["video_path"]
+        caption = entry["caption"]
+        caption_dict[video_path] = caption
+
+    captions = list(caption_dict.values())
+    # # FAISS 검색 시스템 초기화
+    # print("FAISS 검색 시스템 초기화 중...")
+    # faiss_search = FaissSearch(sampling_db_path)
 
     # Supervised Learning 데이터셋 로드
     print("데이터셋 로드 중...")
-    dataset = SupervisedDataset(gt_data, faiss_search, top_k=top_k)
+    dataset = SupervisedDataset(database)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     print(f"데이터셋 준비 완료: {len(dataloader)} 배치")
 
     # 학습 루프
     print("Supervised Learning 시작...")
+    embeddings = {}
     for epoch in range(epochs):
+        caption_tensors = model.encode(captions, convert_to_tensor=True).to(DEVICE)
+
+        # Caption과 임베딩을 매칭하여 딕셔너리 생성
+        caption_embeddings = {
+            video_path: (caption, caption_tensors[i])
+            for i, (video_path, caption) in enumerate(caption_dict.items())
+        }
+
         total_loss = 0
         for batch in dataloader:
-            gt_captions, positive_samples, negative_samples = zip(*batch)
-
-            # 임베딩 생성
-            gt_embeddings = model.encode(gt_captions, convert_to_tensor=True).to(device)
-            positive_embeddings = model.encode(positive_samples, convert_to_tensor=True).to(device)
-            negative_embeddings = model.encode(negative_samples, convert_to_tensor=True).to(device)
+            video_path, query, gt_caption = batch
 
             # 손실 계산 및 최적화
             loss = criterion_loss.contrastive_loss(gt_embeddings, positive_embeddings, negative_embeddings)
@@ -67,7 +78,7 @@ def supervised_learning(gt_data_path, save_path, batch_size, epochs, learning_ra
 
 if __name__ == "__main__":
     # 하이퍼파라미터 및 설정값 정의
-    GT_DATA_PATH = "GT-DB.json"  # GT 데이터 경로
+    sampling_db_path = "GT-DB.json"  # GT 데이터 경로
     SAVE_PATH = "saved_model"    # 모델 가중치 저장 경로
     BATCH_SIZE = 32
     EPOCHS = 5
@@ -76,7 +87,7 @@ if __name__ == "__main__":
 
     # Supervised Learning 실행
     supervised_learning(
-        gt_data_path=GT_DATA_PATH,
+        sampling_db_path=sampling_db_path,
         save_path=SAVE_PATH,
         batch_size=BATCH_SIZE,
         epochs=EPOCHS,
