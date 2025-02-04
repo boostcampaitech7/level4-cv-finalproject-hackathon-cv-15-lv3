@@ -30,3 +30,12 @@ class ContrastiveLoss:
         
         loss = torch.mean(F.relu(pos_dist - neg_dist + self.margin))
         return loss
+
+    # Contrastive Loss
+    def contrastive_loss(query_emb, pos_emb, neg_emb, temperature=TEMPERATURE):
+        pos_sim = F.cosine_similarity(query_emb, pos_emb)
+        neg_sim = F.cosine_similarity(query_emb, neg_emb)
+        
+        loss = -torch.log(torch.exp(pos_sim / temperature) / 
+                        (torch.exp(pos_sim / temperature) + torch.exp(neg_sim / temperature)))
+        return loss.mean()
