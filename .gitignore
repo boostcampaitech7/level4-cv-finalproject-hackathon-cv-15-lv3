@@ -6,6 +6,8 @@ output/
 csv/
 results/
 .DS_Store
+ixc_caption/tmp_clip
+ixc_caption/output.json
 
 __pycache__/
 .DS_Store
