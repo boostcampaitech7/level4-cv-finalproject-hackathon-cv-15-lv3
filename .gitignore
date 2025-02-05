@@ -5,7 +5,7 @@ clips/
 output/
 csv/
 results/
-.DS_Store
+database/
 
 __pycache__/
 .DS_Store
