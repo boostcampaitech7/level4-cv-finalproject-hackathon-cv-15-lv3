@@ -12,7 +12,7 @@ pip uninstall torch torchvision torchaudio -y
 5. torch 다운로드
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-6.requirements.txt 전체를 밑과 같이 바꾸기
+6. docs/requirements.txt를 install한다.
 Pillow==9.3.0
 decord==0.6.0
 gradio==4.31.5
