@@ -324,7 +324,11 @@ class TarsierVideoCaptioningPipeline:
     def process_video(self, video_path, start_time, end_time):
         """Process a video segment and generate caption"""
         video_name = os.path.basename(video_path)  # video_XXX.mp4
-        video_id = video_name.split('_')[1]  # XXX 부분 추출
+        if video_name.startswith('video_'):
+            video_id = video_name.split('_')[1]  # XXX 부분 추출
+        else:
+            video_id = video_name
+
         clip_id = f"clip_{self.clip_counter + 1}"
         
         # 메타데이터 가져오기
@@ -353,8 +357,8 @@ class TarsierVideoCaptioningPipeline:
         # Create result entry with metadata
         result = {
             "video_path": f"video_{video_id}/{self.clip_counter:05d}.mp4",  # video_XXX/00001.mp4 형식
-            "video_id": metadata.get('video_id', video_id),  # 메타데이터에서 없으면 파일명에서 추출한 ID 사용
-            "title": metadata.get('title', ''),
+            "video_id": metadata.get('video_id', ''),
+            "title": metadata.get('title', video_id),
             "url": metadata.get('url', ''),
             "start_time": f"{start_time:.2f}",
             "end_time": f"{end_time:.2f}",
