@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import torch
 from transformers import AutoModel, AutoTokenizer
 
@@ -41,8 +42,13 @@ def process_videos(input_dir, json_output_path):
             video_path = os.path.join(folder, file)
             print(f"Processing {video_path}...")
 
-            # Generate caption
+            # Measure time taken for caption generation
+            start_time = time.time()
             caption = generate_caption(video_path)
+            end_time = time.time()
+
+            elapsed_time = end_time - start_time
+            print(f"Time taken for caption: {elapsed_time:.2f} seconds")
 
             # Save JSON data immediately
             data = {
@@ -63,7 +69,7 @@ def process_videos(input_dir, json_output_path):
 
 # Example usage
 input_dir = '/data/ephemeral/home/data/gt_videos'  # Directory with video folders
-json_output_path = '/data/ephemeral/home/min/output_captions.json'  # JSON output file
+json_output_path = '/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/ixc_caption/json/caption_gt.json'  # JSON output file
 
 # Delete existing JSON file if exists
 if os.path.exists(json_output_path):
