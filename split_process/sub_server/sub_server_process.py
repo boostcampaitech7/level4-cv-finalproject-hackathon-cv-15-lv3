@@ -1,11 +1,11 @@
 import os
-
+#import time
 from config import Config
 # 서버의 IP 주소 가져오기
 
 def process():
     video_files = os.listdir(Config.video_dir)
-
+    #time.sleep(5)
     # 파일명을 txt 파일로 저장
     with open(Config.output_file, "w") as f:
         for file in video_files:

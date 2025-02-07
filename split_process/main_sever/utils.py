@@ -38,7 +38,7 @@ def run_scene_splitter(server: ServerInfo) -> bool:
     if not execute_command(scp_script_cmd, f"스크립트 전송 실패: {server.ip}"):
         return False
 
-    run_script_cmd = ['ssh', '-i', Config.SSH_KEY_PATH, '-p', str(server.port),
+    run_script_cmd = ['ssh','-o StrictHostKeyChecking=no', '-i', Config.SSH_KEY_PATH, '-p', str(server.port),
                       f'{server.username}@{server.ip}', f'/opt/conda/bin/python {Config.SUB_SCRIPT_FILE}']
     return execute_command(run_script_cmd, f"scene_splitter 실행 실패: {server.ip}")
 
@@ -50,5 +50,6 @@ def get_video_files(videos_dir: str) -> List[str]:
 
 def distribute_files(files: List[str], num_servers: int) -> Dict[int, List[str]]:
     """파일을 서버 개수에 맞게 분배"""
+    print("@@@@@@@@@@@@@@",num_servers)
     files_per_server = math.ceil(len(files) / num_servers)
     return {i: files[i * files_per_server: (i + 1) * files_per_server] for i in range(num_servers)}
