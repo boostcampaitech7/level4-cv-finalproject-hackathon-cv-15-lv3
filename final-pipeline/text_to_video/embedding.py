@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
     # all-MiniLM-L6-v2, all-mpnet-base-v2
-    def __init__(self, json_path, model_name="all-MiniLM-L6-v2", use_gpu=True):
+    def __init__(self, json_path, model_name="all-mpnet-base-v2", use_gpu=True):
         init_start = time.time()
         print("\n🔧 FAISS 검색 시스템 초기화 중...")
         
