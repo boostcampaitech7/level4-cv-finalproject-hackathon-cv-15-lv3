@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
     # all-MiniLM-L6-v2, all-mpnet-base-v2
-    def __init__(self, json_path, model_name="all-mpnet-base-v2", use_gpu=True):
+    def __init__(self, json_path, model_name="all-MiniLM-L6-v2", use_gpu=True):
         init_start = time.time()
         print("\n🔧 FAISS 검색 시스템 초기화 중...")
         
@@ -21,6 +21,8 @@ class FaissSearch:
         model_start = time.time()
         print("📥 임베딩 모델 로드 중...")
         self.model = SentenceTransformer(model_name)
+        self.model.to("cuda")
+        self.model.eval()
         print(f"✓ 모델 로드 완료 ({time.time() - model_start:.1f}초)")
 
         # 2. JSON 데이터 로드
@@ -106,7 +108,7 @@ class FaissSearch:
         process_start = time.time()
         for idx, i in enumerate(I[0]):
             try:
-                caption_ko = translator.translate_en_to_ko(self.captions[i])
+                caption_ko = ''
                 if not caption_ko:  # 번역 실패 시 영어 캡션 사용
                     print(f"⚠️ 캡션 번역 실패 - 영어 캡션 사용: {self.captions[i][:100]}...")
                     caption_ko = self.captions[i]

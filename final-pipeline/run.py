@@ -187,7 +187,7 @@ def text_to_video_search():
     translator = DeepLTranslator()
     
     # DB 로드 및 통합
-    main_db_path = "database/caption_embedding_tf_mpnet.json"
+    main_db_path = "database/caption_embedding_tf.json"
     new_db_path = "output/text2video/new_videos_captions.json"
 
     combined_data = []
