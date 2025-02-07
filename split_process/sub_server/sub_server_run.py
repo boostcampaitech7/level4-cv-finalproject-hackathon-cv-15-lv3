@@ -24,9 +24,7 @@ try:
 except Exception as e:
     print(f"키 파일 권한 수정 실패: {str(e)}")
 
-
-
-#output 폴더 생성 및 파일 전송
+#output 폴더 생성
 cmd = [
     'ssh','-o', 'StrictHostKeyChecking=no',
     '-i', Config.ssh_key_path,
@@ -36,6 +34,8 @@ cmd = [
 ]
 subprocess.run(cmd, check=True)
 
+
+#output 파일 전송
 cmd = [
     'scp',
     '-i', Config.ssh_key_path,  # SSH 키 파일 경로
