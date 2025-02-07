@@ -5,6 +5,8 @@ clips/
 output/
 csv/
 results/
+database/
+DB/
 .DS_Store
 ixc_caption/tmp_clip
 ixc_caption/output.json
