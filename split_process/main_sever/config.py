@@ -11,6 +11,6 @@ class Config:
     REMOTE_VIDEO_PATH = os.path.join(REMOTE_PATH, "split_process_videos")
     REMOTE_JSON_PATH = os.path.join(REMOTE_PATH, "split_process_json")
     REMOTE_SCRIPT_PATH = os.path.join(REMOTE_PATH, "split_process_script")
-    SUB_SCRIPT_FILE = os.path.join(REMOTE_SCRIPT_PATH, "sub_server.py")
+    SUB_SCRIPT_FILE = os.path.join(REMOTE_SCRIPT_PATH, "sub_server_run.py")
 
     FILE_LIST = glob.glob(f"{SCRIPT_FOLDER}/*")
