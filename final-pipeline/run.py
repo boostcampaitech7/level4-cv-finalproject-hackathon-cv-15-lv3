@@ -6,7 +6,7 @@ import sys
 import time
 from tqdm import tqdm
 from moviepy import VideoFileClip
-from utils.translator import DeepGoogleTranslator
+from utils.translator import DeepGoogleTranslator, DeepLTranslator
 from video_to_text.video_captioning import TarsierVideoCaptioningPipeline
 from text_to_video.embedding import FaissSearch
 
@@ -200,12 +200,12 @@ def text_to_video_search(query_text, new_videos_dir=None):
     # FAISS 검색
     print("\n🔍 FAISS 검색 시스템 초기화 중...")
     search_time = time.time()
-    translator = DeepGoogleTranslator()
+    translator = DeepLTranslator()
     
     # DB 로드 및 통합
     main_db_path = "database/caption_embedding_tf.json"
     new_db_path = "output/text2video/new_videos_captions.json"
-    
+
     combined_data = []
     with open(main_db_path, 'r', encoding='utf-8') as f:
         combined_data.extend(json.load(f))
@@ -217,12 +217,12 @@ def text_to_video_search(query_text, new_videos_dir=None):
     temp_db_path = "output/text2video/temp_combined_db.json"
     with open(temp_db_path, 'w', encoding='utf-8') as f:
         json.dump(combined_data, f, indent=4, ensure_ascii=False)
-    
+
     faiss_search = FaissSearch(json_path=temp_db_path)
     
     print(f"🔎 검색어: '{query_text}'")
     print(f"🔎 검색어 번역: '{translator.translate_ko_to_en(query_text)}'")
-    similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=5)
+    similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=2)
     print(f"⏱️ 검색 완료 ({time.time() - search_time:.1f}초)")
     
     os.remove(temp_db_path)
@@ -238,6 +238,8 @@ def text_to_video_search(query_text, new_videos_dir=None):
     
     total_time = time.time() - start_time
     print(f"\n✨ 전체 처리 완료 (총 {total_time:.1f}초)")
+
+    return similar_captions
 
 def main():
     parser = argparse.ArgumentParser(description='Video Processing Pipeline')
