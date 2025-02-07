@@ -1,8 +1,8 @@
 import os
 import threading
-from config import Config
-from server_info import SERVERS
-from utils import create_remote_directory, distribute_files_round_robin, scp_transfer, run_scene_splitter,split_process_videos,get_video_files
+from .config import Config
+from .server_info import SERVERS
+from .main_utils import create_remote_directory, distribute_files_round_robin, scp_transfer, run_scene_splitter,split_process_videos,get_video_files
 
 
 def process_server(server_idx, server, files_to_transfer):

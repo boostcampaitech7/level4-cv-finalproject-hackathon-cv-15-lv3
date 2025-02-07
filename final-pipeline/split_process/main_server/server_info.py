@@ -7,6 +7,6 @@ class ServerInfo:
 SERVERS = [
     #ServerInfo("10.28.224.47", 30767, "root"),
     #ServerInfo("10.28.224.149", 31596, "root"),
-    #ServerInfo("10.28.224.153", 31699, "root"),
+    #ServerInfo("10.28.224.180", 31262, "root"),
     ServerInfo("10.28.224.178", 32289, "root")
 ]

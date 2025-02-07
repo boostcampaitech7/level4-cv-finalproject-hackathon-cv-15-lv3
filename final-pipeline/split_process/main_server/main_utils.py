@@ -2,8 +2,8 @@ import os
 import subprocess
 import math
 from typing import List, Dict
-from config import Config
-from server_info import ServerInfo
+from .config import Config
+from .server_info import ServerInfo
 
 
 def execute_command(cmd: List[str], error_message: str) -> bool:
