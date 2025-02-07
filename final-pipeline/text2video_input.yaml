@@ -1,3 +1,4 @@
-query: "초록색 옷을 입고있는 남자가 멈추라고 하는 장면"  # 검색할 쿼리
-new_videos_dir: null  # 새로운 비디오 디렉토리 (선택사항)
+query: "탱크가 포를 쏘는 장면"  # 검색할 쿼리
+process_new: true  # 새로운 비디오 처리 여부 true or false
+new_videos_dir: ./videos/test_video  # 가산점 평가 용 외부 비디오 경로
 top_k: 1  # 검색 결과 개수

@@ -6,9 +6,11 @@ import sys
 import time
 from tqdm import tqdm
 from moviepy import VideoFileClip
-from utils.translator import DeepGoogleTranslator
+from utils.translator import DeepGoogleTranslator, DeepLTranslator
 from video_to_text.video_captioning import TarsierVideoCaptioningPipeline
 from text_to_video.embedding import FaissSearch
+from split_process.main_server.main_server_run import main as split_process_main
+from split_process.main_server.config import Config as SplitConfig
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -45,7 +47,7 @@ def video_to_text_process():
     # 기본 설정값 (코드로 관리)
     KEEP_CLIPS = True  # 클립 저장을 위해 True로 변경
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
+    model_path = "/data/ephemeral/home/Tarsier-7b"
     clips_dir = os.path.join(current_dir, "clips/video2text/")  # 클립 저장 경로
     
     # clips 디렉토리 생성
@@ -132,80 +134,62 @@ def video_to_text_process():
     print(f"📊 처리된 세그먼트: {len(results)}/{len(video_list)}")
     print(f"💾 클립 저장 위치: {clips_dir}")
 
-def text_to_video_search(query_text, new_videos_dir=None):
+def text_to_video_search():
     """텍스트로 비디오 검색하는 파이프라인"""
     print("\n🚀 텍스트-비디오 검색 파이프라인 시작...")
     start_time = time.time()
     
-    # 설정 값 로드
-    print("⚙️ 설정 로드 중...")
-    KEEP_CLIPS = False
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
+    # YAML 설정 파일 로드
+    try:
+        with open('text2video_input.yaml', 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+    except Exception as e:
+        print(f"❌ 설정 파일 로드 실패: {str(e)}")
+        return
 
-    # 메타데이터 로드
-    print("📂 메타데이터 로드 중...")
-    with open('../videos/sample.json', 'r', encoding='utf-8') as f:
-        video_metadata = {item['video_name']: item for item in json.load(f)}
+    query_text = config.get('query', '')
+    process_new = config.get('process_new', False)
+    new_videos_dir = config.get('new_videos_dir', '')
+    top_k = config.get('top_k', 1)  # 기본값 1
 
     # 새로운 비디오가 있는 경우 처리
-    if new_videos_dir and os.path.exists(new_videos_dir):
+    if process_new and new_videos_dir and os.path.exists(new_videos_dir):
         print(f"\n🎥 새로운 비디오 처리 중... ({new_videos_dir})")
+    
+        # 설정 업데이트
+        SplitConfig.VIDEOS_DIR = new_videos_dir
+        SplitConfig.SPLIT_VIDEOS_DIR = os.path.join(new_videos_dir, "split")
         
-        # VideoCaptioningPipeline 초기화
-        print("🔧 Tarsier 모델 초기화 중...")
-        model_init_time = time.time()
+        # 분산 처리 실행
+        print("📦 비디오 분할 및 분산 처리 시작...")
+        process_start_time = time.time()
+        split_process_main()
         
-        pipeline = TarsierVideoCaptioningPipeline(
-            model_path=model_path,
-            keep_clips=KEEP_CLIPS,
-            segmentation_method="fixed",
-            segmentation_params={"segment_duration": 5},
-            mode="text2video",
-            video_metadata=video_metadata
-        )
+        # JSON 결과 취합
+        print("\n📊 처리 결과 취합 중...")
+        json_results = []
+        json_dir = "/data/ephemeral/home/json"  # 메인 서버의 JSON 저장 경로
         
-        print(f"⏱️ 모델 초기화 완료 ({time.time() - model_init_time:.1f}초)")
+        for json_file in os.listdir(json_dir):
+            if json_file.startswith("video_files_") and json_file.endswith(".json"):
+                with open(os.path.join(json_dir, json_file), 'r') as f:
+                    json_results.extend(json.load(f))
         
-        # 새 비디오 처리
-        print("\n🎬 새 비디오 처리 중...")
-        process_time = time.time()
-        new_results = pipeline.process_directory(new_videos_dir)
-        
-        if new_results:
-            # 임베딩 모델 초기화
-            from sentence_transformers import SentenceTransformer
-            embedding_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-            
-            # 새 결과에 임베딩 추가
-            print("📊 새 캡션 임베딩 생성 중...")
-            for item in new_results:
-                caption_en = item['caption']
-                embedding = embedding_model.encode([caption_en])[0]
-                item['embedding'] = embedding.tolist()
-        
-        # 새 결과를 별도 파일로 저장
+        # 새 결과를 DB에 추가
         new_db_path = "output/text2video/new_videos_captions.json"
-        if os.path.exists(new_db_path):
-            with open(new_db_path, 'r', encoding='utf-8') as f:
-                existing_new_db = json.load(f)
-            existing_new_db.extend(new_results)
-            new_results = existing_new_db
-            
         with open(new_db_path, 'w', encoding='utf-8') as f:
-            json.dump(new_results, f, indent=4, ensure_ascii=False)
-                
-        print(f"⏱️ 새 비디오 처리 완료 ({time.time() - process_time:.1f}초)")
+            json.dump(json_results, f, indent=4, ensure_ascii=False)
+        
+        print(f"⏱️ 새 비디오 처리 완료 ({time.time() - process_start_time:.1f}초)")
     
     # FAISS 검색
-    print("\n🔍 FAISS 검색 시스템 초기화 중...")
     search_time = time.time()
-    translator = DeepGoogleTranslator()
+    translator = DeepLTranslator()
     
     # DB 로드 및 통합
-    main_db_path = "database/caption_embedding_tf.json"
+    main_db_path = "database/caption_embedding_tf_mpnet.json"
     new_db_path = "output/text2video/new_videos_captions.json"
-    
+
     combined_data = []
     with open(main_db_path, 'r', encoding='utf-8') as f:
         combined_data.extend(json.load(f))
@@ -217,12 +201,12 @@ def text_to_video_search(query_text, new_videos_dir=None):
     temp_db_path = "output/text2video/temp_combined_db.json"
     with open(temp_db_path, 'w', encoding='utf-8') as f:
         json.dump(combined_data, f, indent=4, ensure_ascii=False)
-    
+
     faiss_search = FaissSearch(json_path=temp_db_path)
     
     print(f"🔎 검색어: '{query_text}'")
     print(f"🔎 검색어 번역: '{translator.translate_ko_to_en(query_text)}'")
-    similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=5)
+    similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=top_k)
     print(f"⏱️ 검색 완료 ({time.time() - search_time:.1f}초)")
     
     os.remove(temp_db_path)
@@ -239,18 +223,17 @@ def text_to_video_search(query_text, new_videos_dir=None):
     total_time = time.time() - start_time
     print(f"\n✨ 전체 처리 완료 (총 {total_time:.1f}초)")
 
+    return similar_captions
+
 def main():
     parser = argparse.ArgumentParser(description='Video Processing Pipeline')
     parser.add_argument('mode', choices=['text2video', 'video2text'],
                       help='Choose pipeline mode: text2video or video2text')
-    parser.add_argument('--new-videos', type=str, default=None,
-                      help='Path to directory containing new videos to process')
     
     args = parser.parse_args()
     
     if args.mode == 'text2video':
-        query_text = "초록색 옷을 입고있는 남자가 멈추라고 하는 장면" # 검색하고 싶은 쿼리 입력
-        text_to_video_search(query_text, new_videos_dir=args.new_videos)
+        text_to_video_search()
     else:
         video_to_text_process()
 
