@@ -30,10 +30,10 @@ def main():
 
     # 파일 분배
     distribution = distribute_files(video_files, len(SERVERS) + 1)
-
+    print(distribution)
     # 서버에 파일 전송 및 스크립트 실행 (병렬 처리)
     threads = []
-    for server_idx, server in enumerate(SERVERS, 1):
+    for server_idx, server in enumerate(SERVERS, 0):
         files_to_transfer = distribution.get(server_idx, [])
         thread = threading.Thread(target=process_server, args=(server_idx, server, files_to_transfer))
         threads.append(thread)
