@@ -1,4 +1,5 @@
 import argparse
+import yaml
 import json
 import os
 import sys
@@ -27,6 +28,109 @@ def save_search_result_clip(video_path, start_time, end_time, output_dir, clip_n
     except Exception as e:
         print(f"❌ 클립 저장 중 오류 발생: {str(e)}")
         return None
+
+def video_to_text_process():
+    """비디오를 텍스트로 변환하는 파이프라인"""
+    print("\n🚀 비디오-텍스트 변환 파이프라인 시작...")
+    process_start_time = time.time()
+    
+    # YAML 설정 파일 로드
+    try:
+        with open('video2text_input.yaml', 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+    except Exception as e:
+        print(f"❌ 설정 파일 로드 실패: {str(e)}")
+        return
+
+    # 기본 설정값 (코드로 관리)
+    KEEP_CLIPS = True  # 클립 저장을 위해 True로 변경
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
+    clips_dir = os.path.join(current_dir, "clips/video2text/")  # 클립 저장 경로
+    
+    # clips 디렉토리 생성
+    os.makedirs(clips_dir, exist_ok=True)
+
+    # 파이프라인 초기화
+    pipeline = TarsierVideoCaptioningPipeline(
+        model_path=model_path,
+        keep_clips=KEEP_CLIPS,
+        mode="video2text",
+        video_metadata={},
+        clips_dir=clips_dir  # 클립 저장 경로 지정
+    )
+    
+    # 비디오 처리
+    video_list = []
+    for video_data in config.get('videos', []):
+        video_path = video_data['video_id']
+        
+        if not os.path.exists(video_path):
+            print(f"⚠️ 비디오를 찾을 수 없음: {video_path}")
+            continue
+        
+        video_list.extend([
+            (video_path, ts['start_time'], ts['end_time'])
+            for ts in video_data['timestamps']
+        ])
+    
+    if not video_list:
+        print("❌ 처리할 비디오가 없습니다.")
+        return
+    
+    # 비디오 처리 및 캡션 생성
+    print(f"\n🎥 비디오 처리 중... (총 {len(video_list)}개 클립)")
+    results = []
+    for idx, (video_path, start_time, end_time) in enumerate(video_list, 1):
+        print(f"\n처리 중: {idx}/{len(video_list)} - {os.path.basename(video_path)} ({start_time}초 ~ {end_time}초)")
+        result = pipeline.process_video(video_path, start_time, end_time)
+        if result:
+            results.append(result)
+            print(f"✅ 완료")
+    
+    # 결과 출력
+    print("\n📝 생성된 캡션:")
+    print("=" * 80)
+    for i, ((original_path, start_time, end_time), result) in enumerate(zip(video_list, results), 1):
+        # YouTube-8M 비디오인 경우 매핑 정보 활용
+        if 'YouTube_8M/YouTube_8M_video' in original_path:
+            video_name = os.path.basename(original_path)  # video_XXX.mp4
+            mapping_path = './videos/YouTube_8M/YouTube_8M_annotation/Movieclips_annotation.json'
+            
+            try:
+                with open(mapping_path, 'r', encoding='utf-8') as f:
+                    mapping_data = json.load(f)
+                    video_info = next(
+                        (item for item in mapping_data if item['video_name'] == video_name),
+                        None
+                    )
+                    if video_info:
+                        video_title = video_info['title']
+                        print(f"\n🎬 클립 {i}: {video_title} (ID: {video_name})")
+                    else:
+                        print(f"\n🎬 클립 {i}: {video_name}")
+            except Exception as e:
+                print(f"\n🎬 클립 {i}: {video_name}")
+        else:
+            # 외부 입력 비디오의 경우 파일명만 출력
+            video_name = os.path.basename(original_path)
+            print(f"\n🎬 클립 {i}: {video_name}")
+        
+        print(f"⏰ 구간: {result['start_time']}초 ~ {result['end_time']}초")
+        print(f"결과: {result['caption_ko']}")
+        print("-" * 80)
+    
+    # 결과 출력 후 시간 계산
+    total_time = time.time() - process_start_time
+    minutes, seconds = divmod(total_time, 60)
+    if minutes >= 60:
+        hours, minutes = divmod(minutes, 60)
+        print(f"\n✨ 전체 처리 완료 (총 {int(hours)}시간 {int(minutes)}분 {seconds:.1f}초)")
+    else:
+        print(f"\n✨ 전체 처리 완료 (총 {int(minutes)}분 {seconds:.1f}초)")
+    
+    print(f"📊 처리된 세그먼트: {len(results)}/{len(video_list)}")
+    print(f"💾 클립 저장 위치: {clips_dir}")
 
 def text_to_video_search(query_text, new_videos_dir=None):
     """텍스트로 비디오 검색하는 파이프라인"""
@@ -99,7 +203,7 @@ def text_to_video_search(query_text, new_videos_dir=None):
     translator = DeepGoogleTranslator()
     
     # DB 로드 및 통합
-    main_db_path = "/data/ephemeral/home/jaehuni/json_DB_v2/caption_embedding_tf.json"
+    main_db_path = "database/caption_embedding_tf.json"
     new_db_path = "output/text2video/new_videos_captions.json"
     
     combined_data = []
@@ -135,78 +239,6 @@ def text_to_video_search(query_text, new_videos_dir=None):
     total_time = time.time() - start_time
     print(f"\n✨ 전체 처리 완료 (총 {total_time:.1f}초)")
 
-def video_to_text_process():
-    """비디오를 텍스트로 변환하는 파이프라인"""
-    print("\n🚀 비디오-텍스트 변환 파이프라인 시작...")
-    start_time = time.time()
-    
-    # 설정 값
-    print("⚙️ 설정 로드 중...")
-    VIDEOS_DIR = "../videos"
-    INPUT_JSON = "video_to_text/input_table.json"
-    KEEP_CLIPS = False
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Tarsier-7b"))
-
-    # 메타데이터 로드
-    print("📂 메타데이터 로드 중...")
-    load_time = time.time()
-    with open('../videos/sample.json', 'r', encoding='utf-8') as f:
-        video_metadata = {item['video_name']: item for item in json.load(f)}
-    print(f"⏱️ 메타데이터 로드 완료 ({time.time() - load_time:.1f}초)")
-
-    # 파이프라인 초기화
-    print("🔧 Tarsier 모델 초기화 중...")
-    model_init_time = time.time()
-    pipeline = TarsierVideoCaptioningPipeline(
-        model_path=model_path,
-        keep_clips=KEEP_CLIPS,
-        mode="video2text",
-        video_metadata=video_metadata
-    )
-    print(f"⏱️ 모델 초기화 완료 ({time.time() - model_init_time:.1f}초)")
-    
-    # JSON 파일에서 세그먼트 정보 로드
-    print("\n📂 입력 JSON 로드 중...")
-    json_load_time = time.time()
-    with open(INPUT_JSON, 'r') as f:
-        input_data = json.load(f)
-    print(f"⏱️ JSON 로드 완료 ({time.time() - json_load_time:.1f}초)")
-    
-    # 비디오 처리
-    print("\n🎬 비디오 목록 생성 중...")
-    video_list = []
-    for video_data in tqdm(input_data['videos'], desc="비디오 처리 준비"):
-        video_path = os.path.join(VIDEOS_DIR, f"{video_data['video_name']}.mp4")
-        if not os.path.exists(video_path):
-            print(f"⚠️ 비디오를 찾을 수 없음: {video_data['video_name']}")
-            continue
-        
-        video_list.extend([
-            (video_path, seg['start'], seg['end'])
-            for seg in video_data['segments']
-        ])
-    
-    if not video_list:
-        print("❌ 처리할 비디오가 없습니다.")
-        return
-    
-    # 비디오 처리 및 캡션 생성
-    print(f"\n🎥 총 {len(video_list)}개 세그먼트 처리 중...")
-    process_time = time.time()
-    results = pipeline.process_videos(video_list)
-    print(f"⏱️ 비디오 처리 완료 ({time.time() - process_time:.1f}초)")
-    
-    # 결과 저장
-    print("\n💾 결과 저장 중...")
-    save_time = time.time()
-    pipeline.save_results(results)
-    print(f"⏱️ 결과 저장 완료 ({time.time() - save_time:.1f}초)")
-    
-    total_time = time.time() - start_time
-    print(f"\n✨ 전체 처리 완료 (총 {total_time:.1f}초)")
-    print(f"📊 처리된 세그먼트: {len(results)}/{len(video_list)}")
-
 def main():
     parser = argparse.ArgumentParser(description='Video Processing Pipeline')
     parser.add_argument('mode', choices=['text2video', 'video2text'],
@@ -217,7 +249,7 @@ def main():
     args = parser.parse_args()
     
     if args.mode == 'text2video':
-        query_text = " " # 검색하고 싶은 쿼리 입력
+        query_text = "초록색 옷을 입고있는 남자가 멈추라고 하는 장면" # 검색하고 싶은 쿼리 입력
         text_to_video_search(query_text, new_videos_dir=args.new_videos)
     else:
         video_to_text_process()
