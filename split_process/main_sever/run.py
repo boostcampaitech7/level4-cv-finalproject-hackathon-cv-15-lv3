@@ -2,7 +2,7 @@ import os
 import threading
 from config import Config
 from server_info import SERVERS
-from utils import create_remote_directory, get_video_files, distribute_files, scp_transfer, run_scene_splitter
+from utils import create_remote_directory, get_video_files, distribute_files_round_robin, scp_transfer, run_scene_splitter
 
 
 def process_server(server_idx, server, files_to_transfer):
@@ -29,7 +29,7 @@ def main():
         return
 
     # 파일 분배
-    distribution = distribute_files(video_files, len(SERVERS) + 1)
+    distribution = distribute_files_round_robin(video_files, len(SERVERS))
     print(distribution)
     # 서버에 파일 전송 및 스크립트 실행 (병렬 처리)
     threads = []

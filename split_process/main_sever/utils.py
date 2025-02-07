@@ -48,8 +48,13 @@ def get_video_files(videos_dir: str) -> List[str]:
     return [f for f in os.listdir(videos_dir) if f.endswith('.mp4')]
 
 
-def distribute_files(files: List[str], num_servers: int) -> Dict[int, List[str]]:
-    """파일을 서버 개수에 맞게 분배"""
-    print("@@@@@@@@@@@@@@",num_servers)
-    files_per_server = math.ceil(len(files) / num_servers)
-    return {i: files[i * files_per_server: (i + 1) * files_per_server] for i in range(num_servers)}
+def distribute_files_round_robin(files: List[str], num_servers: int) -> Dict[int, List[str]]:
+    """파일을 서버 개수에 맞게 순환 방식으로 균등 분배"""
+    distribution = {i: [] for i in range(num_servers)}
+    
+    for idx, file in enumerate(files):
+        server_idx = idx % num_servers  # 순환 방식으로 배정
+        distribution[server_idx].append(file)
+
+    return distribution
+

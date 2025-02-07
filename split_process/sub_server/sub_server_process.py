@@ -2,7 +2,9 @@ import os
 #import time
 from config import Config
 # 서버의 IP 주소 가져오기
-
+ 
+# Config.video_dir 여기에 비디오 파일이 들어있음.
+# Config.output_file 여기에 json 파일 만들면됨.
 def process():
     video_files = os.listdir(Config.video_dir)
     #time.sleep(5)
