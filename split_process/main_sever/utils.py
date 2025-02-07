@@ -59,7 +59,7 @@ def distribute_files_round_robin(files: List[str], num_servers: int) -> Dict[int
     return distribution
 
 
-####ffmpeg
+####ffmpeg -st
 def save_segment(video_path, output_path, start_time, end_time):
     """비디오에서 지정된 구간을 잘라서 저장하는 함수
     
@@ -110,7 +110,7 @@ def split_process_videos(videos_dir: str, output_dir: str):
     for video in video_files:
         video_path = os.path.join(videos_dir, video)
         split_video(video_path, output_dir)
-
+####ffmpeg -ed
 
 
 ########moviepy
