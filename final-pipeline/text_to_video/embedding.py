@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
-
+    # all-MiniLM-L6-v2, all-mpnet-base-v2
     def __init__(self, json_path, model_name="all-MiniLM-L6-v2", use_gpu=True):
         init_start = time.time()
         print("\n🔧 FAISS 검색 시스템 초기화 중...")
@@ -21,6 +21,8 @@ class FaissSearch:
         model_start = time.time()
         print("📥 임베딩 모델 로드 중...")
         self.model = SentenceTransformer(model_name)
+        self.model.to("cuda")
+        self.model.eval()
         print(f"✓ 모델 로드 완료 ({time.time() - model_start:.1f}초)")
 
         # 2. JSON 데이터 로드
@@ -105,14 +107,14 @@ class FaissSearch:
         results = []
         process_start = time.time()
         for idx, i in enumerate(I[0]):
-            try:
-                caption_ko = translator.translate_en_to_ko(self.captions[i])
-                if not caption_ko:  # 번역 실패 시 영어 캡션 사용
-                    print(f"⚠️ 캡션 번역 실패 - 영어 캡션 사용: {self.captions[i][:100]}...")
-                    caption_ko = self.captions[i]
-            except Exception as e:
-                print(f"⚠️ 캡션 번역 중 오류 - 영어 캡션 사용: {str(e)}")
-                caption_ko = self.captions[i]
+            # try:
+            #     caption_ko = ''
+            #     if not caption_ko:  # 번역 실패 시 영어 캡션 사용
+            #         print(f"⚠️ 캡션 번역 실패 - 영어 캡션 사용: {self.captions[i][:100]}...")
+            #         caption_ko = self.captions[i]
+            # except Exception as e:
+            #     print(f"⚠️ 캡션 번역 중 오류 - 영어 캡션 사용: {str(e)}")
+            #     caption_ko = self.captions[i]
                 
             video_folder = self.data[i]['video_path'].split('/')[0]
             video_name = f"{video_folder}.mp4"
@@ -126,7 +128,7 @@ class FaissSearch:
                 'start_time': float(self.data[i]['start_time']),
                 'end_time': float(self.data[i]['end_time'])
             }
-            results.append((caption_ko, D[0][idx], video_info))
+            results.append((D[0][idx], video_info))
         
         process_time = time.time() - process_start
         total_time = time.time() - search_start

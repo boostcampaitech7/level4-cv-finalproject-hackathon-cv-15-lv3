@@ -5,7 +5,7 @@ class DeepLTranslator:
     """DeepL API를 사용한 한국어 ↔ 영어 번역기 클래스"""
     
     def __init__(self):
-        self.api_key = "dabf2942-070c-47e2-94e1-b43cbef766e3:fx"
+        self.api_key = "54c706e1-97bd-49c2-9fea-28df1183ac1b:fx"
         self.url = "https://api-free.deepl.com/v2/translate"
 
     def translate(self, text, source_lang, target_lang):
