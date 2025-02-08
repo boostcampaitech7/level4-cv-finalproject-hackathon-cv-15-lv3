@@ -212,13 +212,13 @@ def text_to_video_search():
     os.remove(temp_db_path)
     
     # 결과 출력
-    for i, (caption, similarity, video_info) in enumerate(similar_captions):
+    for i, (similarity, video_info) in enumerate(similar_captions):
         print(f"\n🎯 검색 결과 {i+1}")
         print(f"📊 유사도: {similarity:.4f}")
         print(f"🎬 비디오: {os.path.basename(video_info['video_path'])}")
         print(f"⏰ 구간: {video_info['start_time']}초 ~ {video_info['end_time']}초")
         print(f"📝 제목: {video_info['title']}")
-        print(f"📝 캡션: {caption}")
+        print(f"🔍 검색어: {query_text}")
     
     total_time = time.time() - start_time
     print(f"\n✨ 전체 처리 완료 (총 {total_time:.1f}초)")

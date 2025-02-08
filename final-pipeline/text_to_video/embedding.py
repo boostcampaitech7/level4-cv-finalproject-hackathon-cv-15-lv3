@@ -107,14 +107,14 @@ class FaissSearch:
         results = []
         process_start = time.time()
         for idx, i in enumerate(I[0]):
-            try:
-                caption_ko = ''
-                if not caption_ko:  # 번역 실패 시 영어 캡션 사용
-                    print(f"⚠️ 캡션 번역 실패 - 영어 캡션 사용: {self.captions[i][:100]}...")
-                    caption_ko = self.captions[i]
-            except Exception as e:
-                print(f"⚠️ 캡션 번역 중 오류 - 영어 캡션 사용: {str(e)}")
-                caption_ko = self.captions[i]
+            # try:
+            #     caption_ko = ''
+            #     if not caption_ko:  # 번역 실패 시 영어 캡션 사용
+            #         print(f"⚠️ 캡션 번역 실패 - 영어 캡션 사용: {self.captions[i][:100]}...")
+            #         caption_ko = self.captions[i]
+            # except Exception as e:
+            #     print(f"⚠️ 캡션 번역 중 오류 - 영어 캡션 사용: {str(e)}")
+            #     caption_ko = self.captions[i]
                 
             video_folder = self.data[i]['video_path'].split('/')[0]
             video_name = f"{video_folder}.mp4"
@@ -128,7 +128,7 @@ class FaissSearch:
                 'start_time': float(self.data[i]['start_time']),
                 'end_time': float(self.data[i]['end_time'])
             }
-            results.append((caption_ko, D[0][idx], video_info))
+            results.append((D[0][idx], video_info))
         
         process_time = time.time() - process_start
         total_time = time.time() - search_start
