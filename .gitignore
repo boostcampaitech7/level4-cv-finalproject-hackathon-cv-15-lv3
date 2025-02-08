@@ -15,3 +15,7 @@ __pycache__/
 .DS_Store
 *.out
 *.log
+
+# 임시
+*.json
+*.txt
