@@ -43,8 +43,13 @@ final-pipeline
 ```yaml
 # example : video2text_input.yaml
 
+# YouTube-8M 권장 데이터 셋 예시
+# - video_id: videos/YouTube_8M/YouTube_8M_video/{video_name}.mp4
+#   timestamps:
+#     - {start_time: 0.0, end_time: 5.0}
+
 videos:
-  - video_id: video_257.mp4 # video_id
+  - video_id: ./videos/YouTube_8M_video/video_257.mp4 # video_id
     timestamps:  # 처리할 시간 구간들
       - {start_time: 55.0, end_time: 60.0}
 ```
@@ -60,12 +65,17 @@ final-pipeline
 │   │   ├── new_vieo_2.mp4
 ```
 
-평가를 위한 ***(video_path, timestamp_start, timestamp_end)*** 정보를 [video2text_input.yaml](./video2text_input.yaml) 파일에 입력해주세요.
+평가를 위한 ***(video_id, timestamp_start, timestamp_end)*** 정보를 [video2text_input.yaml](./video2text_input.yaml) 파일에 입력해주세요.
 ```yaml
 # example : video2text_input.yaml
 
+# 외부 Input Video 예시
+# - video_id: videos/input_video/{Video File Name}.mp4
+#   timestamps:
+#     - {start_time: 0.0, end_time: 5.0}
+
 videos:
-  - video_path: ./videos/input_video/new_video_1.mp4 # video_id
+  - video_id: ./videos/input_video/new_video_1.mp4 # new video path
     timestamps:  # 처리할 시간 구간들
       - {start_time: 0.0, end_time: 5.0}
 ```
@@ -98,16 +108,16 @@ queries:     # 입력 Query
     - 복싱 경기하는 장면"
 ``` 
 
-### 2. 가산점 평가 (외부 비디오) - 입력 방법
+### 2. 가산점 평가 (외부 비디오 + YouTube-8M) - 입력 방법
 ***process_new*** 를 ***true*** 로 변경해주세요.
 
 ***new_videos_dir*** 경로를 정확하게 입력해주세요.
 
 ```yaml
-# example : text2video_input.yaml (top_k, queries 입력방법 기초 평가와 동일)
+# example : text2video_input.yaml 
 process_new: true # 새로운 외부 비디오 입력 여부
 new_videos_dir : ./videos/iput_video # 새로운 외부 비디오 root directory
-...
+... # (top_k, queries 입력방법 기초 평가와 동일)
 ```
 
 ---
