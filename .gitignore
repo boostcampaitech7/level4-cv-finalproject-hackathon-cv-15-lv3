@@ -14,3 +14,8 @@ __pycache__/
 .DS_Store
 *.out
 *.log
+
+# 지워야함
+*.py
+*.json
+*.txt
