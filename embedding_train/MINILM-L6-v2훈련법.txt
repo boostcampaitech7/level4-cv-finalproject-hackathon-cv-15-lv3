@@ -1,0 +1,29 @@
+0. 데이터를 생성한다. (.json.gz형태)(make_train_data로 만드는 예시 있음.)
+0-1. [["A","B"],["A","B"], ...] A와 B를 Positive
+0-2. [["A","B","C"],["A","B","C"]] A와 B는 Positive, C는 Negative
+
+
+1. 허깅페이스에서 모델 Clone 
+git clone https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+
+2. 모델 폴더 안에 
+train_script.py를
+level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/train_script.py 로 대체한다.
+
+3. 모델 폴더 안에 data폴더를 만든다.
+0번에서 만든 json.gz 데이터 경로를 가르키는 data_config.json 파일을 만든다.
+
+ex)
+[
+    {
+        "name": "/data/ephemeral/home/min/all-MiniLM-L6-v2/data/train_sentence_pairs.json.gz",
+        "lines": 357,
+        "weight": 3
+    }
+]
+
+4. 명령어를 입력해 모델을 훈련시킨다.
+nohup python train_script.py --steps 스텝수 --save_steps 몇스텝마다저장할지 --model 2에서다운받은모델폴더경로 --data_folder data/  data/data_config.json 모델아웃풋경로 > train_log_loss.out 2>&1 &
+
+
+nohup python train_script.py --steps 2000 --save_steps 10000 --model /data/ephemeral/home/min/all-MiniLM-L6-v2 --data_folder data/  data/data_config.json /data/ephemeral/home/finetune_output > train_log_loss.out 2>&1 &
