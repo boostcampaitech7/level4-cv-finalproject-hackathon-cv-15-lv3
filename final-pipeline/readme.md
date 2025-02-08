@@ -1,5 +1,3 @@
-터미널상에서 final-pipeline 위치로 이동 부탁드립니다.
-
 # 티빙 해커톤 코드 실행 가이드 (CV-15)
 
 ## Project Structure
@@ -23,7 +21,7 @@ final-pipeline
 ├── readme.md 
 ├── run.py                              # V2T, T2V 실행 스크립트
 ├── text2video_input.yaml               # Text to Video 평가 input 입력 파일 
-└── vidoe2text_input.yaml               # Video to Text 평가 input 입력 파일
+└── video2text_input.yaml               # Video to Text 평가 input 입력 파일
 
 
 ```
