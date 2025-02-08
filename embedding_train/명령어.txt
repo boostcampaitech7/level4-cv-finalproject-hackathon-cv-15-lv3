@@ -1,0 +1,1 @@
+nohup python train_script.py     --steps 2000     --save_steps 10000     --model /data/ephemeral/home/min/all-MiniLM-L6-v2     --data_folder data/     data/data_config.json     /data/ephemeral/home/finetune_output     > train_log_loss.out 2>&1 &
