@@ -223,7 +223,6 @@ def text_to_video_search():
         similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=top_k)
         all_results[query_text] = similar_captions
         
-        
         external_video_dir = "./videos/input_video"
         youtube_videos_dir = "./videos/YouTube_8M/YouTube_8M_video"
 
@@ -231,13 +230,14 @@ def text_to_video_search():
         print(f"\n🎯 '{query_text}'의 검색 결과:")
         for i, (similarity, video_info) in enumerate(similar_captions, 1):
             video_path = video_info['video_path']
-            video_start_time = float(video_info['start_time'])  # 문자열을 float로 변환
+            video_start_time = float(video_info['start_time'])
             video_end_time = float(video_info['end_time'])
             
             # video_id 유무에 따라 비디오 경로 결정
             if 'video_id' in video_info and video_info['video_id']:
-                # YouTube 비디오인 경우
-                full_video_path = os.path.join(youtube_videos_dir, video_path)
+                # YouTube 비디오인 경우 경로 수정
+                video_folder = video_path.split('/')[0]  # video_1045/00027.mp4 -> video_1045
+                full_video_path = os.path.join(youtube_videos_dir, f"{video_folder}.mp4")
             else:
                 # 외부 입력 비디오인 경우
                 full_video_path = os.path.join(external_video_dir, video_path)
@@ -248,7 +248,11 @@ def text_to_video_search():
                 
             # 클립 파일명 생성
             query_slug = "_".join(query_text.split())[:30]
-            clip_filename = f"{query_slug}_rank{i}_{os.path.splitext(os.path.basename(video_path))[0]}_{video_start_time}_{video_end_time}.mp4"
+            base_video_name = os.path.splitext(os.path.basename(video_path))[0]
+            if 'video_id' in video_info and video_info['video_id']:
+                # YouTube 비디오인 경우 폴더명을 사용
+                base_video_name = video_path.split('/')[0]
+            clip_filename = f"{query_slug}_rank{i}_{base_video_name}_{video_start_time}_{video_end_time}.mp4"
             clip_path = os.path.join(search_clips_dir, clip_filename)
             
             try:
