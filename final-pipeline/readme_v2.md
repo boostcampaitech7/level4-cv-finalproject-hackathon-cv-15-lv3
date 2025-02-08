@@ -43,11 +43,6 @@ final-pipeline
 ```yaml
 # example : video2text_input.yaml
 
-# YouTube-8M 권장 데이터 셋 예시
-# - video_id: videos/YouTube_8M/YouTube_8M_video/{video_name}.mp4
-#   timestamps:
-#     - {start_time: 0.0, end_time: 5.0}
-
 videos:
   - video_id: ./videos/YouTube_8M_video/video_257.mp4 # video_id
     timestamps:  # 처리할 시간 구간들
