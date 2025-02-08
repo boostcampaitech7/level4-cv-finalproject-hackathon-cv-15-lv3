@@ -261,7 +261,7 @@ def sample_video(
     vr = decord.VideoReader(video_path, num_threads=1, ctx=decord.cpu(0))
     vr.seek(0)
     fps=vr.get_avg_fps()
-    total_frames = fps*3 #3초일때 가정, 5초면 바꾸기
+    total_frames = min(fps*3-1,len(vr)) #3초일때 가정, 5초면 바꾸기
     fps = vr.get_avg_fps()
 
     start_frame = 0

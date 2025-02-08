@@ -64,7 +64,9 @@ def check_corrupted_frames_decord(video_path: str):
 
     vr = decord.VideoReader(video_path, num_threads=1, ctx=decord.cpu(0))
     fps=vr.get_avg_fps()
+    metadata = vr.get_meta_data()
     print(f"FPS: {fps}")
+    print(f"Metadata: {metadata}")
     total_frames = len(vr)
 
     print(f"Total frames in video: {total_frames}")
