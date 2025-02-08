@@ -1,78 +1,128 @@
 # 티빙 해커톤 코드 실행 가이드 (CV-15)
 
-## Project Structure
+## 프로젝트 폴더 구조
 
-```
+```bash
 final-pipeline
 ├── clips/   
 │   ├── text2video/                     # Text to Video 클립 생성 위치
 │   └── video2text/                     # Video to Text 클립 생성 위치  
+│
 ├── database/   
 ├── output/
 ├── split_process/
 ├── text_to_video/
 ├── utils/
 ├── video_to_text/
+│
 ├── videos/
-│   ├── input_video/                    # 가산점 평가용 외부 데이터(비디오)파일 위치
-│   └── YouTube_8M/
-│       ├── YouTube_8M_annotation.json  # Video_id 매핑 파일
-│	└── YouTube_8M_video/           # 권장 데이터(비디오) 파일 위치
+│   ├── input_video/                   # 가산점 평가용 외부 데이터(비디오)파일 위치
+│   └── mapping/
+│       ├── YouTube_8M_annotation.json # Video_id 매핑 파일
+│	└── YouTube_8M_video/              # 권장 데이터(비디오) 파일 위치
+│
 ├── readme.md 
-├── run.py                              # V2T, T2V 실행 스크립트
-├── text2video_input.yaml               # Text to Video 평가 input 입력 파일 
-└── video2text_input.yaml               # Video to Text 평가 input 입력 파일
-
+├── run.py                             # V2T, T2V 실행 스크립트
+│
+├── text2video_input.yaml              # Text to Video 평가 input 입력 파일 
+└── video2text_input.yaml              # Video to Text 평가 input 입력 파일
 
 ```
 
-## Video to Text
+## Video to Text 실행 방법
 
-#### - Video to Text 평가를 위한 (video_id, timestamp_start, timestamp_end) 입력 방법
 
-1. video2text_input.yaml파일에 들어갑니다.
-2. 권장 데이터를 평가하는 경우(YouTube-8M) Video_id를 예시에 맞춰서 적으시면 됩니다.
-3. 평가를 원하시는 구간 시작과 끝을 적어주시면 됩니다.
-4. YouTube-8M 비디오의 제목과 Video_id 매핑 테이블은 위 폴더 구조에 나와있듯이
-   videos/YouTube_8M/ 폴더에 YouTube_8M_annotation.json으로 있으므로 확인해 주시면 됩니다.
-5. 외부 비디오를 평가하는 경우 videos/input_video/ 폴더에 넣어주시면 됩니다.
-6. 외부 비디오는 video_id 대신 비디오 이름(파일명)을 예시에 맞춰서 적으시면 됩니다.
-7. 마찬가지로 평가를 원하시는 구간 시작과 끝을 적어주시면 됩니다.
+### 1. 기초 평가 (YouTube-8M) - 입력 방법
 
-#### - Video to Text 결과 확인 방법
 
-1. 위에서 입력을 넣으셨다면 터미널상에서 final-pipeline 위치로 이동 부탁드립니다.
-2. 다음 명령어를 입력해 주시면 됩니다.
-   ```
-   python run.py video2text
-   ```
-3. 스크립트 실행 결과가 터미널에 출력됩니다.
-4. 입력 비디오 구간을 클립으로 보고 싶으시면 위 폴더 구조에 나와있듯이
-   clips/video2text/ 폴더에 생성이 되므로 확인해 주시면 될 것 같습니다.
+평가를 위한 ***(video_id, timestamp_start, timestamp_end)*** 정보를 [video2text_input.yaml](./video2text_input.yaml) 파일에 입력합니다.
 
-## Text to Video (Frame)
+- YouTube-8M ***비디오 제목 및 url*** 과 ***video_id*** 매핑 테이블은 [YouTube_8M_annotation.json](./mapping/YouTube_8M_annotation.json) 파일에서 확인할 수 있습니다.
 
-#### - Text to Video 평가를 위한 쿼리 입력 방법
+- 평가할 비디오의 ***시작(timestamp_start)*** 및 ***끝(timestamp_end)*** 구간을 명시해주세요.
+```yaml
+# example : video2text_input.yaml
 
-1. text2video_input.yaml파일에 들어갑니다.
-2. 권장 데이터만 평가하는 기초 평가의 경우 process_new를 false로 해주시면 됩니다.
-3. query 부분에 평가를 원하시는 쿼리를 예시에 맞춰서 넣어주시면 됩니다.
-4. top_k 부분에 원하시는 쿼리에 대한 응답 개수를 적어주시면 됩니다.
-5. 가산점 평가를 진행하시는 경우 process_new를 true로 해주시면 됩니다.
-6. 가산점 평가를 위한 외부 비디오들은 videos/input_video/ 폴더에 한 번에 전부 넣어주시면 됩니다.
-   (Video to Text에서 진행한 외부 비디오와 같은 경우 그대로 사용하시고 아닌경우 비워주신 뒤 추가하시면 됩니다.)
-7. 마찬가지로 평가를 원하시는 쿼리를 예시에 맞춰서 넣어주시면 됩니다.
+videos:
+  - video_id: ./videos/YouTube_8M_video/video_257.mp4 # video_id
+    timestamps:  # 처리할 시간 구간들
+      - {start_time: 55.0, end_time: 60.0}
+```
+---
+### 2. 가산점 평가 (외부 비디오) - 입력 방법
+외부 비디오를 평가하려면 [videos/input_video/](./videos/input_video/) 폴더에 가산점 평가용 비디오를 추가해주세요.
+```bash
+final-pipeline
+│
+├── videos/
+│   ├── input_video/                   # 가산점 평가용 외부 데이터(비디오)파일 위치
+│   │   ├── new_vieo_1.mp4             # 가산점 평가용 비디오
+│   │   ├── new_vieo_2.mp4
+```
 
-#### - Text to Video 결과 확인 방법
+평가를 위한 ***(video_id, timestamp_start, timestamp_end)*** 정보를 [video2text_input.yaml](./video2text_input.yaml) 파일에 입력해주세요.
+```yaml
+# example : video2text_input.yaml
 
-1. 위에서 입력을 넣으셨다면 터미널상에서 final-pipeline 위치로 이동 부탁드립니다.
-2. 다음 명령어를 입력해 주시면 됩니다.
-   ```
-   pyhton run.py text2video
-   ```
-3. 스크립트 실행 결과(비디오 이름, 구간)가 터미널에 출력됩니다.
-4. 검색 결과의 비디오 클립은 위 폴더 구조에 나와있듯이
-   clips/text2video/ 폴더에 생성이 되므로 확인해 주시면 될 것 같습니다.
-5. 가산점 평가 시에도 위에서 입력 방법만 바꾸신 후에 2번과 같은 명령어를 사용해 주시면 됩니다.
+# 외부 Input Video 예시
+# - video_id: videos/input_video/{Video File Name}.mp4
+#   timestamps:
+#     - {start_time: 0.0, end_time: 5.0}
 
-### 감사합니다.
+videos:
+  - video_id: ./videos/input_video/new_video_1.mp4 # new video path
+    timestamps:  # 처리할 시간 구간들
+      - {start_time: 0.0, end_time: 5.0}
+```
+----
+### 3. 실행 방법
+터미널에서 [final-pipeline](./final-pipeline) 폴더로 이동합니다.
+```bash
+# final-pipline/
+python run.py video2text
+```
+- 결과는 터미널에 출력됩니다.
+- 클립 파일을 확인하려면 [clips/video2text/](./clips/video2text/) 폴더를 확인하세요.
+
+---
+
+## Text to Video 실행 방법
+
+### 1. 기초 평가 (YouTube-8M) - 입력 방법
+
+[text2video_input.yaml](./text2video_input.yaml) 파일에 다음 정보들을 입력해주세요.
+
+```yaml
+# example : text2video_input.yaml
+process_new: false # 새로운 외부 비디오 입력 여부
+new_videos_dir : ./videos/iput_video # 새로운 외부 비디오 root directory
+top_k : 1    # 검색 영상 갯수                             
+queries:     # 입력 Query
+    - "남자들이 헤드셋 끼고 컴퓨터 하는 장면"
+    - "두 사람이 눈 오는 날 걷는 장면"
+    - 복싱 경기하는 장면"
+``` 
+
+### 2. 가산점 평가 (외부 비디오 + YouTube-8M) - 입력 방법
+***process_new*** 를 ***true*** 로 변경해주세요.
+
+***new_videos_dir*** 경로를 정확하게 입력해주세요.
+
+```yaml
+# example : text2video_input.yaml 
+process_new: true # 새로운 외부 비디오 입력 여부
+new_videos_dir : ./videos/iput_video # 새로운 외부 비디오 root directory
+... # (top_k, queries 입력방법 기초 평가와 동일)
+```
+
+---
+
+### 3. 실행 방법
+터미널에서 [final-pipeline](./final-pipeline) 폴더로 이동합니다.
+```bash
+# final-pipline/
+python run.py text2video
+```
+- 검색 결과는 터미널에 출력됩니다.
+- 클립 파일은 [clips/text2video/](./clips/text2video/) 폴더에서 확인할 수 있습니다.
+
