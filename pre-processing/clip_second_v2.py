@@ -158,8 +158,8 @@ def process_videos_from_json(json_file, video_base_path, designated_path, start,
                 scene_data = {
                     "video_path": f"video_{video_number}/{clip_file_name}",
                     "video_id": video_info["video_id"],
-                    "video_title": video_info["title"],
-                    "video_url": video_info["url"],
+                    "title": video_info["title"],
+                    "url": video_info["url"],
                     "start_time": f"{start_time:.2f}",
                     "end_time": f"{end_time:.2f}"
                 }
@@ -174,17 +174,17 @@ def process_videos_from_json(json_file, video_base_path, designated_path, start,
     return all_scene_data  # 모든 비디오 세그먼트 데이터를 반환
 
 # ✅ 예제 실행
-json_file = "/data/ephemeral/home/data/YouTube-8M-annatation/Movieclips_annotation.json"  # 비디오 메타데이터가 포함된 JSON 파일 경로
-video_base_path = "/data/ephemeral/home/data/videos"  # 원본 비디오가 저장된 폴더 경로
-designated_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/videos"  # 클립이 저장될 폴더 경로
-start_video = 813  # 처리할 비디오 시작 번호
+json_file = "/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/json/DB/annotations/Movieclips_annotation.json"  # 비디오 메타데이터가 포함된 JSON 파일 경로
+video_base_path = "/hdd1/lim_data/YouTube-8M-video"  # 원본 비디오가 저장된 폴더 경로
+designated_path = "/hdd1/lim_data/YouTube-8M-video-3sec_clips"  # 클립이 저장될 폴더 경로
+start_video = 896  # 처리할 비디오 시작 번호
 end_video = 1218 # 처리할 비디오 종료 번호
 
 # 지정한 범위 내의 비디오를 처리하여 JSON 데이터 생성
-output_json = process_videos_from_json(json_file, video_base_path, designated_path, start=start_video, end=end_video, segment_method="fixed", segment_duration=5)
+output_json = process_videos_from_json(json_file, video_base_path, designated_path, start=start_video, end=end_video, segment_method="fixed", segment_duration=3)
 
 # JSON 데이터를 파일로 저장
-with open("/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/dataset/video_segments.json", "w", encoding="utf-8") as json_file:
+with open("./896_1218_3sec.json", "w", encoding="utf-8") as json_file:
     json.dump(output_json, json_file, indent=4)
 
 # JSON 데이터를 출력

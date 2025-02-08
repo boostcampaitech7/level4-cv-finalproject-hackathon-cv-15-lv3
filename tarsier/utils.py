@@ -209,7 +209,7 @@ def load_model_and_processor(model_name_or_path, max_n_frames=8):
     model = TarsierForConditionalGeneration.from_pretrained(
         model_name_or_path,
         config=model_config,
-        device_map='auto',
+        device_map='auto', # 'auto' or {"": 0} ..
         torch_dtype=torch.float16,
         trust_remote_code=True
     )
