@@ -85,9 +85,6 @@ class FaissSearch:
         translated_query = translator.translate_ko_to_en(input_text)
         translate_time = time.time() - translate_start
         
-        print(f"🔎 검색어: '{input_text}'")
-        print(f"🔎 번역된 검색어: '{translated_query}'")
-        
         if not translated_query:
             print("🚨 검색어 번역 실패!")
             return []
@@ -107,37 +104,18 @@ class FaissSearch:
         results = []
         process_start = time.time()
         for idx, i in enumerate(I[0]):
-            # try:
-            #     caption_ko = ''
-            #     if not caption_ko:  # 번역 실패 시 영어 캡션 사용
-            #         print(f"⚠️ 캡션 번역 실패 - 영어 캡션 사용: {self.captions[i][:100]}...")
-            #         caption_ko = self.captions[i]
-            # except Exception as e:
-            #     print(f"⚠️ 캡션 번역 중 오류 - 영어 캡션 사용: {str(e)}")
-            #     caption_ko = self.captions[i]
-                
-            video_folder = self.data[i]['video_path'].split('/')[0]
-            video_name = f"{video_folder}.mp4"
-            real_video_path = os.path.join("../videos", video_name)
-            
+            # video_path 처리를 단순화
             video_info = {
-                'video_path': real_video_path,
+                'video_path': self.data[i]['video_path'],  # DB에 저장된 그대로의 경로
                 'video_id': self.data[i]['video_id'],
                 'title': self.data[i]['title'],
-                'url': self.data[i]['url'],
-                'start_time': float(self.data[i]['start_time']),
-                'end_time': float(self.data[i]['end_time'])
+                'url': self.data[i].get('url', ''),  # url이 없을 수 있으므로 get 사용
+                'start_time': self.data[i]['start_time'],  # 문자열 형태 유지
+                'end_time': self.data[i]['end_time']
             }
             results.append((D[0][idx], video_info))
         
         process_time = time.time() - process_start
         total_time = time.time() - search_start
-        
-        print("\n⏱️ 검색 성능:")
-        print(f"• 번역 시간: {translate_time:.3f}초")
-        print(f"• 임베딩 시간: {embed_time:.3f}초")
-        print(f"• 검색 시간: {search_time:.3f}초")
-        print(f"• 결과 처리 시간: {process_time:.3f}초")
-        print(f"• 총 소요 시간: {total_time:.3f}초")
         
         return results

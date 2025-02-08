@@ -59,10 +59,12 @@ def process():
             
             # 결과 저장
             result = {
-                "video_path": video_file,
-                "video_name": video_name,
-                "start_time": start_time,
-                "end_time": end_time,
+                "video_path": f"{video_name}.mp4",  # 원본 비디오 이름으로 저장
+                "video_id": "",
+                "title": video_name,
+                "url": "",
+                "start_time": str(start_time),
+                "end_time": str(end_time),
                 "caption": caption,
                 "embedding": embedding.tolist()
             }
