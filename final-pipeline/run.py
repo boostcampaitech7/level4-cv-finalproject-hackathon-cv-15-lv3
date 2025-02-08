@@ -152,64 +152,67 @@ def text_to_video_search():
     new_videos_dir = config.get('new_videos_dir', '')
     top_k = config.get('top_k', 1)  # 기본값 1
 
+    # DB 경로 설정
+    main_db_path = "database/caption_embedding_tf.json"
+    new_db_path = "output/text2video/new_videos_captions.json"
+    temp_db_path = "output/text2video/temp_combined_db.json"
+
     # 새로운 비디오가 있는 경우 처리
     if process_new and new_videos_dir and os.path.exists(new_videos_dir):
-        print(f"\n🎥 새로운 비디오 처리 중... ({new_videos_dir})")
-    
-        # 설정 업데이트
-        SplitConfig.VIDEOS_DIR = new_videos_dir
-        SplitConfig.SPLIT_VIDEOS_DIR = os.path.join(new_videos_dir, "split")
-        
-        # 분산 처리 실행
-        print("📦 비디오 분할 및 분산 처리 시작...")
-        process_start_time = time.time()
-        split_process_main()
-        
-        # JSON 결과 취합
-        print("\n📊 처리 결과 취합 중...")
-        json_results = []
-        json_dir = "/data/ephemeral/home/json"  # 메인 서버의 JSON 저장 경로
-        
-        for json_file in os.listdir(json_dir):
-            if json_file.startswith("video_files_") and json_file.endswith(".json"):
-                with open(os.path.join(json_dir, json_file), 'r') as f:
-                    json_results.extend(json.load(f))
-        
-        # 새 결과를 DB에 추가
-        new_db_path = "output/text2video/new_videos_captions.json"
-        with open(new_db_path, 'w', encoding='utf-8') as f:
-            json.dump(json_results, f, indent=4, ensure_ascii=False)
-        
-        print(f"⏱️ 새 비디오 처리 완료 ({time.time() - process_start_time:.1f}초)")
+        if not os.path.exists(temp_db_path):  # temp_combined_db가 없는 경우만 새로 생성
+            print(f"\n🎥 새로운 비디오 처리 중... ({new_videos_dir})")
+            
+            # 설정 업데이트 및 분산 처리
+            SplitConfig.VIDEOS_DIR = new_videos_dir
+            SplitConfig.SPLIT_VIDEOS_DIR = os.path.join(new_videos_dir, "split")
+            
+            print("📦 비디오 분할 및 분산 처리 시작...")
+            process_start_time = time.time()
+            split_process_main()
+            
+            # JSON 결과 취합
+            print("\n📊 처리 결과 취합 중...")
+            json_results = []
+            json_dir = "/data/ephemeral/home/json"
+            
+            for json_file in os.listdir(json_dir):
+                if json_file.startswith("video_files_") and json_file.endswith(".json"):
+                    with open(os.path.join(json_dir, json_file), 'r') as f:
+                        json_results.extend(json.load(f))
+            
+            # 새 결과를 DB에 저장
+            with open(new_db_path, 'w', encoding='utf-8') as f:
+                json.dump(json_results, f, indent=4, ensure_ascii=False)
+            
+            # temp_combined_db 생성
+            print("🔄 통합 DB 생성 중...")
+            with open(main_db_path, 'r', encoding='utf-8') as f:
+                combined_data = json.load(f)
+            combined_data.extend(json_results)
+            
+            with open(temp_db_path, 'w', encoding='utf-8') as f:
+                json.dump(combined_data, f, indent=4, ensure_ascii=False)
+            
+            print(f"⏱️ 새 비디오 처리 완료 ({time.time() - process_start_time:.1f}초)")
     
     # FAISS 검색
     search_time = time.time()
     translator = DeepLTranslator()
     
-    # DB 로드 및 통합
-    main_db_path = "database/caption_embedding_tf.json"
-    new_db_path = "output/text2video/new_videos_captions.json"
-
-    combined_data = []
-    with open(main_db_path, 'r', encoding='utf-8') as f:
-        combined_data.extend(json.load(f))
+    # DB 선택
+    if process_new and os.path.exists(temp_db_path):
+        search_db_path = temp_db_path
+        print("🔍 통합 DB에서 검색 중...")
+    else:
+        search_db_path = main_db_path
+        print("🔍 기본 DB에서 검색 중...")
     
-    if os.path.exists(new_db_path):
-        with open(new_db_path, 'r', encoding='utf-8') as f:
-            combined_data.extend(json.load(f))
-    
-    temp_db_path = "output/text2video/temp_combined_db.json"
-    with open(temp_db_path, 'w', encoding='utf-8') as f:
-        json.dump(combined_data, f, indent=4, ensure_ascii=False)
-
-    faiss_search = FaissSearch(json_path=temp_db_path)
+    faiss_search = FaissSearch(json_path=search_db_path)
     
     print(f"🔎 검색어: '{query_text}'")
     print(f"🔎 검색어 번역: '{translator.translate_ko_to_en(query_text)}'")
     similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=top_k)
     print(f"⏱️ 검색 완료 ({time.time() - search_time:.1f}초)")
-    
-    os.remove(temp_db_path)
     
     # 결과 출력
     for i, (similarity, video_info) in enumerate(similar_captions):
