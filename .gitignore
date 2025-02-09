@@ -9,7 +9,7 @@ database/
 DB/
 .DS_Store
 ixc_caption/tmp_clip
-ixc_caption/output.json
+ixc_caption/json
 
 __pycache__/
 .DS_Store
