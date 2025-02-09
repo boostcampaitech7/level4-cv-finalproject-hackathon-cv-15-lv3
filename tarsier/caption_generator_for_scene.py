@@ -28,9 +28,9 @@ import threading
 #     return output_text
 
 # 경로 설정
-video_base_path = "/hdd1/lim_data/YouTube-8M-video-3sec_clips"
-json_file_path = "/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/pre-processing/896_1218_3sec.json"
-captioned_json_file_path = "/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/pre-processing/896_1218_3sec.json"
+video_base_path = "/hdd1/lim_data/YouTube-8M-video-7sec_clips"
+json_file_path = "/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/tarsier/7sec.json"
+captioned_json_file_path = "/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/tarsier/7sec.json"
 
 model_path = "/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/Tarsier-7b"
 error_log_path = "error_log.txt"
@@ -57,10 +57,11 @@ def timeout_handler():
 
 # JSON 메타데이터를 순회하며 각 클립을 처리
 
-error_index = [55, 399, 2640, 2641, 2654]
+# error_index = [55, 399, 2640, 2641, 2654, 2655, 2658, 2663, 2669, 2670, 2673, 2674, 2678, 2679, 2681, 2682, 2687, 2688, 2691, 2692, 3647, 3883]
+error_index = []
 # start_index = error_index[-1] + 1  
 
-for i in range(len(video_metadata)):  # 시작 인덱스부터 반복
+for i in tqdm(range(len(video_metadata))):  # 시작 인덱스부터 반복
     video = video_metadata[i]
     video_path = os.path.join(video_base_path, video['video_path'])  # video_path 포함하도록 조정
     print(f" {i}/{len(video_metadata)} {video['video_path']}")
