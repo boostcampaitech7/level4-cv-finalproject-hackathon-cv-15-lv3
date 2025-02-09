@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
     # all-MiniLM-L6-v2, all-mpnet-base-v2
-    def __init__(self, json_path, model_name="all-MiniLM-L6-v2", use_gpu=True):
+    def __init__(self, json_path, model_name="all-mpnet-base-v2", use_gpu=True):
         init_start = time.time()
         print("\n🔧 FAISS 검색 시스템 초기화 중...")
         
@@ -99,24 +99,36 @@ class FaissSearch:
         
         # 3. FAISS 검색
         search_start_time = time.time()
-        D, I = self.gpu_index.search(query_embedding, top_k)
+        extra_k = max(3, top_k)  # 최소 3개 이상의 결과를 가져옴
+        D, I = self.gpu_index.search(query_embedding, extra_k)
         search_time = time.time() - search_start_time
         
-        # 4. 결과 처리
+        # 4. 결과 처리 (가중치 적용)
         results = []
         process_start = time.time()
         for idx, i in enumerate(I[0]):
-            # video_path 처리를 단순화
             video_info = {
-                'video_path': self.data[i]['video_path'],  # DB에 저장된 그대로의 경로
+                'video_path': self.data[i]['video_path'],
                 'video_id': self.data[i]['video_id'],
                 'title': self.data[i]['title'],
-                'url': self.data[i].get('url', ''),  # url이 없을 수 있으므로 get 사용
-                'start_time': self.data[i]['start_time'],  # 문자열 형태 유지
+                'url': self.data[i].get('url', ''),
+                'start_time': self.data[i]['start_time'],
                 'end_time': self.data[i]['end_time'],
                 'caption': self.data[i]['caption']
             }
-            results.append((D[0][idx], video_info))
+            
+            # 유사도 가중치 적용
+            similarity = float(D[0][idx])
+            if 'video_id' not in video_info or not video_info['video_id']:
+                weighted_similarity = similarity * 1.3  # 30% 가중치 증가
+                print(f"  ⚖️ 외부 데이터 가중치 적용: {similarity:.4f} → {weighted_similarity:.4f}")
+                results.append((weighted_similarity, video_info))
+            else:
+                results.append((similarity, video_info))
+        
+        # 가중치 적용 후 재정렬
+        results.sort(key=lambda x: x[0], reverse=True)
+        results = results[:top_k]  # top_k개만 선택
         
         process_time = time.time() - process_start
         total_time = time.time() - search_start

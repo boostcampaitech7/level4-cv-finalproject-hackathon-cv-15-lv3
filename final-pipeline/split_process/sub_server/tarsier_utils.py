@@ -260,8 +260,8 @@ def sample_video(
     assert os.path.exists(video_path), f"File not found: {video_path}"
     vr = decord.VideoReader(video_path, num_threads=1, ctx=decord.cpu(0))
     vr.seek(0)
-    total_frames = len(vr)
     fps = vr.get_avg_fps()
+    total_frames = min(fps*5-1,len(vr))
 
     start_frame = 0
     end_frame = total_frames - 1

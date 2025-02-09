@@ -8,16 +8,16 @@ from tarsier_utils import load_model_and_processor
 def process():
     print("🤖 Tarsier 모델 로딩 중...")
     model_path = "/data/ephemeral/home/Tarsier-7b"
-    model, processor = load_model_and_processor(model_path, max_n_frames=3)
+    model, processor = load_model_and_processor(model_path, max_n_frames=4)
     
     print("🔤 임베딩 모델 로딩 중...")
-    embedding_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    embedding_model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
     
     video_files = os.listdir(Config.video_dir)
     results = []
     
     # 배치 크기 설정
-    batch_size = 6
+    batch_size = 4
     print(f"총 {len(video_files)}개의 비디오 처리 시작... (배치 크기: {batch_size})")
     
     for i in range(0, len(video_files), batch_size):
