@@ -8,10 +8,12 @@ from sentence_transformers import SentenceTransformer
 
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
-
-    def __init__(self, json_path, model_name="all-MiniLM-L6-v2", use_gpu=True):
+    # all-mpnet-base-v2, all-MiniLM-L6-v2, /data/ephemeral/home/final
+    def __init__(self, json_path, model_name="sentence-transformers/all-MiniLM-L6-v2", use_gpu=True):
         self.json_path = json_path
         self.model = SentenceTransformer(model_name)
+        self.model.to('cuda')
+        self.model.eval()
 
         # JSON 데이터 로드 또는 생성
         if os.path.exists(self.json_path):
@@ -61,6 +63,7 @@ class FaissSearch:
         translated_query = translator.translate_ko_to_en(input_text)
         if not translated_query:
             print("🚨 번역 실패! 입력 텍스트를 확인하세요.")
+            raise ValueError("번역 실패! 입력 텍스트를 확인하세요.")
             return []
 
         query_embedding = self.model.encode([translated_query]).astype(np.float32)
@@ -70,7 +73,8 @@ class FaissSearch:
         
         results = []
         for idx, i in enumerate(I[0]):
-            caption_ko = translator.translate_en_to_ko(self.captions[i])
+            caption_ko = ""
+            # caption_ko = translator.translate_en_to_ko(self.captions[i])
             
             # video_XXX/00001.mp4 형식에서 video_XXX.mp4 추출
             video_folder = self.data[i]['video_path'].split('/')[0]  # video_XXX
