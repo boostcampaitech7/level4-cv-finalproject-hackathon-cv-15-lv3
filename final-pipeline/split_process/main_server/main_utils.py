@@ -84,7 +84,7 @@ def save_segment(video_path, output_path, start_time, end_time):
 
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-def split_video(video_path: str, output_dir: str, segment_duration: int = 7):
+def split_video(video_path: str, output_dir: str, segment_duration: int = 3):
     """비디오를 segment_duration 초 단위로 분할하여 저장하는 함수"""
     os.makedirs(output_dir, exist_ok=True)
     

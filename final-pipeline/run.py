@@ -202,11 +202,11 @@ def text_to_video_search():
 
     # FAISS 검색
     search_time = time.time()
-    translator = DeepGoogleTranslator()
+    translator = DeepLTranslator()
     
     # DB 선택
     if process_new and os.path.exists(temp_db_path):
-        search_db_path = temp_db_path
+        search_db_path = temp_db_path #temp_db_path
         print("🔍 통합 DB에서 검색 중...")
     else:
         search_db_path = main_db_path
@@ -269,6 +269,7 @@ def text_to_video_search():
             print(f"  ⏰ 구간: {video_start_time}초 ~ {video_end_time}초")
             print(f"  📝 제목: {video_info['title']}")
             print(f"  🔍 검색어: {query_text}")
+            print(f"      캡션: {video_info['caption']}")
     
     print(f"\n⏱️ 전체 검색 완료 ({time.time() - search_time:.1f}초)")
     print(f"💾 클립 저장 위치: {search_clips_dir}")

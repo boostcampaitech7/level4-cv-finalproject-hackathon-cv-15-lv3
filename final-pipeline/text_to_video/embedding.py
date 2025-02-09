@@ -83,6 +83,8 @@ class FaissSearch:
         # 1. 번역
         translate_start = time.time()
         translated_query = translator.translate_ko_to_en(input_text)
+        print(f"🔎 검색어: '{input_text}'")
+        print(f"🔎 번역된 검색어: '{translated_query}'")
         translate_time = time.time() - translate_start
         
         if not translated_query:
@@ -111,7 +113,8 @@ class FaissSearch:
                 'title': self.data[i]['title'],
                 'url': self.data[i].get('url', ''),  # url이 없을 수 있으므로 get 사용
                 'start_time': self.data[i]['start_time'],  # 문자열 형태 유지
-                'end_time': self.data[i]['end_time']
+                'end_time': self.data[i]['end_time'],
+                'caption': self.data[i]['caption']
             }
             results.append((D[0][idx], video_info))
         
