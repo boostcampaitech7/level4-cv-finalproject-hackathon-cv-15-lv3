@@ -58,12 +58,12 @@ if __name__ == "__main__":
     # DeepL API 키 설정 (환경 변수에서 가져오기)
     auth_key = os.getenv("DEEPL_API_KEY")  # 환경 변수에서 가져오기
     if not auth_key:
-        auth_key = "54c706e1-97bd-49c2-9fea-28df1183ac1b:fx"  # 직접 입력 (보안 취약)
+        auth_key = "aaa69e50-8536-4f58-a127-f94834afa71b:fx"  # 직접 입력 (보안 취약)
 
     # 파일 경로 설정
-    input_file = "/data/ephemeral/home/gt_v5_update.json"
-    json_output_file = "/data/ephemeral/home/sentence_pairs.json"      # 일반 JSON
-    gzip_output_file = "/data/ephemeral/home/sentence_pairs.json.gz"  # 압축된 JSONL
+    input_file = "/data/ephemeral/home/gt_v6_update.json"
+    json_output_file = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/data/sentence_pairs.json"      # 일반 JSON
+    gzip_output_file = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/data/sentence_pairs.json.gz"  # 압축된 JSONL
 
     # 문장 쌍 데이터셋 생성 및 저장
     create_sentence_pairs(input_file, json_output_file, gzip_output_file, auth_key)

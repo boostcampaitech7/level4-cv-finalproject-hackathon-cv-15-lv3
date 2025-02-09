@@ -118,6 +118,7 @@ def train_function(index, args, queue):
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
         optimizer.step()
         lr_scheduler.step()
+        print(f"Step {global_step + 1}, Loss: {loss.item()}")
 
         if (global_step + 1) % args.save_steps == 0:
             output_path = os.path.join(args.output, str(global_step + 1))
