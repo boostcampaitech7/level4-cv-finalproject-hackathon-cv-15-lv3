@@ -64,9 +64,7 @@ def check_corrupted_frames_decord(video_path: str):
 
     vr = decord.VideoReader(video_path, num_threads=1, ctx=decord.cpu(0))
     fps=vr.get_avg_fps()
-    metadata = vr.get_meta_data()
     print(f"FPS: {fps}")
-    print(f"Metadata: {metadata}")
     total_frames = len(vr)
 
     print(f"Total frames in video: {total_frames}")
@@ -103,9 +101,9 @@ def check_corrupted_frames_decord(video_path: str):
 # Example usage
 if __name__ == "__main__":
     model_path = "/data/ephemeral/home/Tarsier-7b"  # 모델 경로
-    video_file = "/data/ephemeral/home/min/00039.mp4"  # 비디오 파일 경로
+    video_file = "/data/ephemeral/home/min/00012.mp4"  # 비디오 파일 경로
     
-    corrupted_frames = check_corrupted_frames_decord(video_file)
+    #corrupted_frames = check_corrupted_frames_decord(video_file)
     model, processor = load_model_and_processor(model_path, max_n_frames=8)
     '''total_story = ""
     instruction = "<video>\nWho are the main characters in this scene?"  # 프롬프트
