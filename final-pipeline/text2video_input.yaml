@@ -1,0 +1,10 @@
+process_new: true  # 새로운 비디오 처리 여부 ex) true or false
+new_videos_dir: ./videos/input_video  # 가산점 평가 용 외부 비디오 경로 ex) ./videos/input_video
+top_k: 1  # 검색 결과 개수 ex) 1 ~ 10
+queries:
+  # ex)
+  # - "남자가 헤드셋 끼고 컴퓨터 하는 장면"
+  # - "비가 오는 날 우산을 쓰고 걷는 장면"
+  - "교실에서 안경을 쓰고 분홍색 옷을 입은 여자가 교복을 입은 학생들에게 미술을 가르치는 장면"
+  - "노란색 캐릭터가 놀란 얼굴로 관을 타고 떨어지는 장면"
+  - "핵 폭탄이 터지는 장면"

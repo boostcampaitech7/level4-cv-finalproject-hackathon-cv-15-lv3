@@ -5,12 +5,21 @@ clips/
 output/
 csv/
 results/
+database/
+DB/
 .DS_Store
+ixc_caption/tmp_clip
+ixc_caption/json
 
 __pycache__/
 .DS_Store
 *.out
 *.log
+<<<<<<< HEAD
 *.csv
 *.json
 *.txt
+=======
+
+# 임시
+>>>>>>> e02308934a20a288953cb6ccd0d1f2d1bf45eadb

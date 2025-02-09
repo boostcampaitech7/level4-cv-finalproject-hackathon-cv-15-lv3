@@ -1,0 +1,18 @@
+videos:
+  # YouTube-8M 권장 데이터 셋 입력 예시
+  # - video_id: videos/YouTube_8M/YouTube_8M_video/<video_id>.mp4
+  #   timestamps:
+  #     - {start_time: 0.0, end_time: 5.0}
+
+  - video_id: ./videos/YouTube_8M/YouTube_8M_video/video_257.mp4
+    timestamps:
+      - {start_time: 55.0, end_time: 60.0}
+
+  # 외부 Input Video 예시
+  # - video_id: videos/input_video/<Video File Name>.mp4
+  #   timestamps:
+  #     - {start_time: 0.0, end_time: 5.0}
+
+  - video_id: ./videos/input_video/Korea Short film 'Beyond the wall'.mp4
+    timestamps:
+      - {start_time: 0.0, end_time: 5.0}
