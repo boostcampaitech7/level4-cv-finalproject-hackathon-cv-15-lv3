@@ -28,10 +28,12 @@ class DeepGoogleTranslator:
             print(f"🚨 번역 오류: {str(e)}")
             return None
 
+# all-mpnet-base-v2
+# all-MiniLM-L6-v2
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
     
-    def __init__(self, json_path, model_name="all-mpnet-base-v2", use_gpu=True):
+    def __init__(self, json_path, model_name="all-MiniLM-L6-v2", use_gpu=True):
         self.json_path = json_path
         self.translator = DeepGoogleTranslator()
         self.model = SentenceTransformer(model_name)  # SentenceTransformer 모델 설정

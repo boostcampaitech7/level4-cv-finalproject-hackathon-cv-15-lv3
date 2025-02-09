@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import time
+import subprocess
 from tqdm import tqdm
 from moviepy import VideoFileClip
 from utils.translator import DeepGoogleTranslator, DeepLTranslator
@@ -13,23 +14,6 @@ from split_process.main_server.main_server_run import main as split_process_main
 from split_process.main_server.config import Config as SplitConfig
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-def save_search_result_clip(video_path, start_time, end_time, output_dir, clip_name):
-    """검색 결과 클립을 저장"""
-    os.makedirs(output_dir, exist_ok=True)
-    
-    try:
-        clip = VideoFileClip(video_path).subclipped(start_time, end_time)
-        output_path = os.path.join(output_dir, f"{clip_name}.mp4")
-        clip.write_videofile(output_path, codec='libx264', audio=False)
-        clip.close()
-        
-        print(f"✅ 검색 결과 클립 저장 완료: {output_path}")
-        return output_path
-        
-    except Exception as e:
-        print(f"❌ 클립 저장 중 오류 발생: {str(e)}")
-        return None
 
 def video_to_text_process():
     """비디오를 텍스트로 변환하는 파이프라인"""
@@ -134,6 +118,22 @@ def video_to_text_process():
     print(f"📊 처리된 세그먼트: {len(results)}/{len(video_list)}")
     print(f"💾 클립 저장 위치: {clips_dir}")
 
+def save_search_clip(video_path, output_path, start_time, end_time):
+    """검색 결과 비디오 클립을 저장하는 함수"""
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    command = [
+        "ffmpeg",
+        "-ss", str(start_time),
+        "-i", video_path,
+        "-t", str(end_time - start_time),
+        "-c", "copy",
+        output_path,
+        "-y"
+    ]
+    
+    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
 def text_to_video_search():
     """텍스트로 비디오 검색하는 파이프라인"""
     print("\n🚀 텍스트-비디오 검색 파이프라인 시작...")
@@ -147,10 +147,10 @@ def text_to_video_search():
         print(f"❌ 설정 파일 로드 실패: {str(e)}")
         return
 
-    query_text = config.get('query', '')
+    queries = config.get('queries', [])
     process_new = config.get('process_new', False)
     new_videos_dir = config.get('new_videos_dir', '')
-    top_k = config.get('top_k', 1)  # 기본값 1
+    top_k = config.get('top_k', 1)
 
     # DB 경로 설정
     main_db_path = "database/caption_embedding_tf.json"
@@ -195,38 +195,89 @@ def text_to_video_search():
             
             print(f"⏱️ 새 비디오 처리 완료 ({time.time() - process_start_time:.1f}초)")
     
+    # 클립 저장 디렉토리 설정
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    search_clips_dir = os.path.join(current_dir, "clips/text2video/")
+    os.makedirs(search_clips_dir, exist_ok=True)
+
     # FAISS 검색
     search_time = time.time()
     translator = DeepLTranslator()
     
     # DB 선택
     if process_new and os.path.exists(temp_db_path):
-        search_db_path = temp_db_path
+        search_db_path = temp_db_path #temp_db_path
         print("🔍 통합 DB에서 검색 중...")
     else:
         search_db_path = main_db_path
         print("🔍 기본 DB에서 검색 중...")
     
     faiss_search = FaissSearch(json_path=search_db_path)
+    all_results = {}  # 모든 쿼리의 결과를 저장할 딕셔너리
     
-    print(f"🔎 검색어: '{query_text}'")
-    print(f"🔎 검색어 번역: '{translator.translate_ko_to_en(query_text)}'")
-    similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=top_k)
-    print(f"⏱️ 검색 완료 ({time.time() - search_time:.1f}초)")
+    print(f"\n총 {len(queries)}개의 쿼리 처리 시작...")
     
-    # 결과 출력
-    for i, (similarity, video_info) in enumerate(similar_captions):
-        print(f"\n🎯 검색 결과 {i+1}")
-        print(f"📊 유사도: {similarity:.4f}")
-        print(f"🎬 비디오: {os.path.basename(video_info['video_path'])}")
-        print(f"⏰ 구간: {video_info['start_time']}초 ~ {video_info['end_time']}초")
-        print(f"📝 제목: {video_info['title']}")
-        print(f"🔍 검색어: {query_text}")
+    for query_idx, query_text in enumerate(queries, 1):
+        print(f"\n📝 쿼리 {query_idx}/{len(queries)}: '{query_text}'")
+        
+        similar_captions = faiss_search.find_similar_captions(query_text, translator, top_k=top_k)
+        all_results[query_text] = similar_captions
+        
+        external_video_dir = "./videos/input_video"
+        youtube_videos_dir = "./videos/YouTube_8M/YouTube_8M_video"
+
+        # 각 쿼리의 결과 출력 및 클립 저장
+        print(f"\n🎯 '{query_text}'의 검색 결과:")
+        for i, (similarity, video_info) in enumerate(similar_captions, 1):
+            video_path = video_info['video_path']
+            video_start_time = float(video_info['start_time'])
+            video_end_time = float(video_info['end_time'])
+            
+            # video_id 유무에 따라 비디오 경로 결정
+            if 'video_id' in video_info and video_info['video_id']:
+                # YouTube 비디오인 경우 경로 수정
+                video_folder = video_path.split('/')[0]  # video_1045/00027.mp4 -> video_1045
+                full_video_path = os.path.join(youtube_videos_dir, f"{video_folder}.mp4")
+            else:
+                # 외부 입력 비디오인 경우
+                full_video_path = os.path.join(external_video_dir, video_path)
+            
+            if not os.path.exists(full_video_path):
+                print(f"  ⚠️ 원본 비디오를 찾을 수 없음: {video_path}")
+                continue
+                
+            # 클립 파일명 생성
+            query_slug = "_".join(query_text.split())[:30]
+            base_video_name = os.path.splitext(os.path.basename(video_path))[0]
+            if 'video_id' in video_info and video_info['video_id']:
+                # YouTube 비디오인 경우 폴더명을 사용
+                base_video_name = video_path.split('/')[0]
+            clip_filename = f"{query_slug}_rank{i}_{base_video_name}_{video_start_time}_{video_end_time}.mp4"
+            clip_path = os.path.join(search_clips_dir, clip_filename)
+            
+            try:
+                # ffmpeg로 비디오 클립 추출
+                save_search_clip(full_video_path, clip_path, video_start_time, video_end_time)
+                print(f"  💾 클립 저장: {clip_filename}")
+            except Exception as e:
+                print(f"  ⚠️ 클립 저장 실패: {str(e)}")
+            
+            # 결과 출력
+            print(f"\n  결과 {i}")
+            print(f"  📊 유사도: {similarity:.4f}")
+            print(f"  🎬 비디오: {os.path.basename(video_path)}")
+            print(f"  ⏰ 구간: {video_start_time}초 ~ {video_end_time}초")
+            print(f"  📝 제목: {video_info['title']}")
+            print(f"  🔍 검색어: {query_text}")
+            print(f"      캡션: {video_info['caption']}")
+    
+    print(f"\n⏱️ 전체 검색 완료 ({time.time() - search_time:.1f}초)")
+    print(f"💾 클립 저장 위치: {search_clips_dir}")
     
     total_time = time.time() - start_time
     print(f"\n✨ 전체 처리 완료 (총 {total_time:.1f}초)")
 
-    return similar_captions
+    return all_results
 
 def main():
     parser = argparse.ArgumentParser(description='Video Processing Pipeline')
