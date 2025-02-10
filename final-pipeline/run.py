@@ -65,58 +65,81 @@ def video_to_text_process():
         return
     
     # 비디오 처리 및 캡션 생성
-    print(f"\n🎥 비디오 처리 중... (총 {len(video_list)}개 클립)")
-    results = []
-    for idx, (video_path, start_time, end_time) in enumerate(video_list, 1):
-        print(f"\n처리 중: {idx}/{len(video_list)} - {os.path.basename(video_path)} ({start_time}초 ~ {end_time}초)")
-        result = pipeline.process_video(video_path, start_time, end_time)
-        if result:
-            results.append(result)
-            print(f"✅ 완료")
-    
-    # 결과 출력
-    print("\n📝 생성된 캡션:")
-    print("=" * 80)
-    for i, ((original_path, start_time, end_time), result) in enumerate(zip(video_list, results), 1):
-        # YouTube-8M 비디오인 경우 매핑 정보 활용
-        if 'YouTube_8M/YouTube_8M_video' in original_path:
-            video_name = os.path.basename(original_path)  # video_XXX.mp4
-            mapping_path = './videos/YouTube_8M/YouTube_8M_annotation/Movieclips_annotation.json'
+    result_txt_path = os.path.join(clips_dir, "search_result.txt")
+    with open(result_txt_path, 'w', encoding='utf-8') as f:
+        # 비디오 처리 및 캡션 생성
+        print(f"\n🎥 비디오 처리 중... (총 {len(video_list)}개 클립)")
+        f.write(f"\n🎥 비디오 처리 중... (총 {len(video_list)}개 클립)\n")
+        results = []
+        for idx, (video_path, start_time, end_time) in enumerate(video_list, 1):
+            process_msg = f"\n처리 중: {idx}/{len(video_list)} - {os.path.basename(video_path)} ({start_time}초 ~ {end_time}초)"
+            print(process_msg)
+            f.write(process_msg + "\n")
             
-            try:
-                with open(mapping_path, 'r', encoding='utf-8') as f:
-                    mapping_data = json.load(f)
-                    video_info = next(
-                        (item for item in mapping_data if item['video_name'] == video_name),
-                        None
-                    )
-                    if video_info:
-                        video_title = video_info['title']
-                        print(f"\n🎬 클립 {i}: {video_title} (ID: {video_name})")
-                    else:
-                        print(f"\n🎬 클립 {i}: {video_name}")
-            except Exception as e:
-                print(f"\n🎬 클립 {i}: {video_name}")
-        else:
-            # 외부 입력 비디오의 경우 파일명만 출력
-            video_name = os.path.basename(original_path)
-            print(f"\n🎬 클립 {i}: {video_name}")
+            result = pipeline.process_video(video_path, start_time, end_time)
+            if result:
+                results.append(result)
+                print(f"✅ 완료")
+                f.write("✅ 완료\n")
         
-        print(f"⏰ 구간: {result['start_time']}초 ~ {result['end_time']}초")
-        print(f"결과: {result['caption_ko']}")
-        print("-" * 80)
+        # 결과 출력
+        print("\n📝 생성된 캡션:")
+        print("=" * 80)
+        f.write("\n📝 생성된 캡션:\n")
+        f.write("=" * 80 + "\n")
+        
+        for i, ((original_path, start_time, end_time), result) in enumerate(zip(video_list, results), 1):
+            if 'YouTube_8M/YouTube_8M_video' in original_path:
+                video_name = os.path.basename(original_path)
+                mapping_path = './videos/YouTube_8M/YouTube_8M_annotation/Movieclips_annotation.json'
+                
+                try:
+                    with open(mapping_path, 'r', encoding='utf-8') as map_f:
+                        mapping_data = json.load(map_f)
+                        video_info = next(
+                            (item for item in mapping_data if item['video_name'] == video_name),
+                            None
+                        )
+                        if video_info:
+                            video_title = video_info['title']
+                            clip_info = f"\n🎬 클립 {i}: {video_title} (ID: {video_name})"
+                        else:
+                            clip_info = f"\n🎬 클립 {i}: {video_name}"
+                except Exception as e:
+                    clip_info = f"\n🎬 클립 {i}: {video_name}"
+            else:
+                video_name = os.path.basename(original_path)
+                clip_info = f"\n🎬 클립 {i}: {video_name}"
+            
+            print(clip_info)
+            f.write(clip_info + "\n")
+            
+            result_info = f"⏰ 구간: {result['start_time']}초 ~ {result['end_time']}초\n결과: {result['caption_ko']}"
+            print(result_info)
+            f.write(result_info + "\n")
+            
+            separator = "-" * 80
+            print(separator)
+            f.write(separator + "\n")
+        
+        # 결과 출력 후 시간 계산
+        total_time = time.time() - process_start_time
+        minutes, seconds = divmod(total_time, 60)
+        
+        if minutes >= 60:
+            hours, minutes = divmod(minutes, 60)
+            time_msg = f"\n✨ 전체 처리 완료 (총 {int(hours)}시간 {int(minutes)}분 {seconds:.1f}초)"
+        else:
+            time_msg = f"\n✨ 전체 처리 완료 (총 {int(minutes)}분 {seconds:.1f}초)"
+        
+        print(time_msg)
+        f.write(time_msg + "\n")
+        
+        summary = f"📊 처리된 세그먼트: {len(results)}/{len(video_list)}\n💾 클립 저장 위치: {clips_dir}"
+        print(summary)
+        f.write(summary + "\n")
     
-    # 결과 출력 후 시간 계산
-    total_time = time.time() - process_start_time
-    minutes, seconds = divmod(total_time, 60)
-    if minutes >= 60:
-        hours, minutes = divmod(minutes, 60)
-        print(f"\n✨ 전체 처리 완료 (총 {int(hours)}시간 {int(minutes)}분 {seconds:.1f}초)")
-    else:
-        print(f"\n✨ 전체 처리 완료 (총 {int(minutes)}분 {seconds:.1f}초)")
-    
-    print(f"📊 처리된 세그먼트: {len(results)}/{len(video_list)}")
-    print(f"💾 클립 저장 위치: {clips_dir}")
+    print(f"📝 결과가 저장됨: {result_txt_path}")
 
 def save_search_clip(video_path, output_path, start_time, end_time):
     """검색 결과 비디오 클립을 저장하는 함수"""
