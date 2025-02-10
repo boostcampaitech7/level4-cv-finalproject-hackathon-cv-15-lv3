@@ -22,7 +22,7 @@ MODEL_NAME = "sentence-transformers/all-mpnet-base-v2"  # 임베딩 모델
 TOP_K = 5  # 부정 샘플 개수
 
 # ✅ DeepL API 설정 (API KEY 입력 필수)
-DEEPL_API_KEY = "9aea63c4-21bd-450b-a0a0-37672400a354:fx"  # <<<< DeepL API 키를 입력하세요
+DEEPL_API_KEY = ""  # <<<< DeepL API 키를 입력하세요
 DEEPL_API_URL = "https://api-free.deepl.com/v2/translate"
 
 # ✅ DeepL API를 이용한 번역 함수
