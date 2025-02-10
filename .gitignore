@@ -15,11 +15,11 @@ __pycache__/
 .DS_Store
 *.out
 *.log
-<<<<<<< HEAD
 *.csv
 *.json
 *.txt
-=======
 
 # 임시
->>>>>>> e02308934a20a288953cb6ccd0d1f2d1bf45eadb
+all-MiniLM-L6-v2/
+all-mpnet-base-v2/
+*.xlsx

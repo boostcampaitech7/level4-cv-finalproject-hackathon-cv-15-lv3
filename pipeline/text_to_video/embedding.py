@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
 
-    def __init__(self, json_path, model_name="all-MiniLM-L6-v2", use_gpu=True):
+    def __init__(self, json_path, model_name="/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/contrastive/fine_tuned_contrastive_model", use_gpu=True):
         self.json_path = json_path
         self.model = SentenceTransformer(model_name)
 

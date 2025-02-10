@@ -6,12 +6,13 @@ import time
 import argparse
 from tqdm import tqdm
 from text_to_video.embedding import FaissSearch
-from utils.translator import DeepGoogleTranslator
+from utils.translator import DeepGoogleTranslator, DeepLTranslator
 
 def evaluate_metrics(excel_path, db_path, top_k=5):
     """Recall@k와 Median Rank 동시 평가"""
     df = pd.read_excel(excel_path)
     translator = DeepGoogleTranslator()
+    # translator = DeepLTranslator()
     faiss_search = FaissSearch(json_path=db_path)
     
     metrics = {
@@ -65,7 +66,7 @@ def evaluate_metrics(excel_path, db_path, top_k=5):
     
     return metrics
 
-def save_summary_results(all_results, top_k):
+def save_summary_results(all_results, top_k, excel_path):
     """종합 결과를 파일로 저장"""
     output_dir = "results/search_evaluation"
     os.makedirs(output_dir, exist_ok=True)
@@ -75,7 +76,7 @@ def save_summary_results(all_results, top_k):
     output_path = os.path.join(output_dir, filename)
     
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write("📊 DB 별 성능 비교:\n")
+        f.write("📊 DB 별 성능 비교: " + excel_path + "\n")
         f.write("="*70 + "\n")
         f.write(f"{'DB 이름':20} {'Recall@'+str(top_k):10} {'평균유사도':10} {'MedianRank':12}\n")
         f.write("-"*70 + "\n")
@@ -88,18 +89,14 @@ def save_summary_results(all_results, top_k):
 
 def main():
     parser = argparse.ArgumentParser(description='검색 성능 평가')
-    parser.add_argument('--top-k', type=int, default=10, 
-                       help='Recall@k의 k값 (기본값: 10)')
+    parser.add_argument('--top-k', type=int, default=1, 
+                       help='Recall@k의 k값 (기본값: 1)')
     args = parser.parse_args()
 
-    excel_path = "csv/evaluation_dataset_v2.xlsx"
+    excel_path = "/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/pipeline/evaluation_dataset_v2.xlsx"
+    # excel_path = "/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/evaluation/GT.xlsx"
     db_configs = [
-        "output/text2video/test2_db_d3_t2v_captions.json",
-        "output/text2video/test2_db_d5_t2v_captions.json",
-        "output/text2video/test2_db_d7_t2v_captions.json",
-        "output/text2video/test2_db_s_t2v_captions.json",
-        "output/text2video/test2_db_pya_t2v_captions.json",
-        "output/text2video/test2_db_pyc_t2v_captions.json"
+        "/home/hwang/leem/level4-cv-finalproject-hackathon-cv-15-lv3/json/DB/annotations/caption_embedding_tf_35_mpnet_new_embeddings.json"
     ]
     
     results = {}
@@ -109,7 +106,7 @@ def main():
         metrics = evaluate_metrics(excel_path, db_path, top_k=args.top_k)
         results[db_name] = metrics
     
-    save_summary_results(results, args.top_k)
+    save_summary_results(results, args.top_k, excel_path)
 
 if __name__ == "__main__":
     main()
