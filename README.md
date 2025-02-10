@@ -9,7 +9,7 @@
 <img width="749" alt="스크린샷 2025-02-10 오후 5 39 38" src="https://github.com/user-attachments/assets/e879bc4b-456e-43d0-96fe-7ff86ec0770d" />
 
 # Full Pipeline 
-<img width="654" alt="스크린샷 2025-02-10 오후 5 41 15" src="https://github.com/user-attachments/assets/139afa4c-2e4a-468a-86b1-b003d7f755e3" />
+<img width="773" alt="스크린샷 2025-02-10 오후 5 43 58" src="https://github.com/user-attachments/assets/44d2f2aa-d935-4cd1-8205-472953a533ca" />
 
 
 ### Filter의 ID(mid)값 찾기 
