@@ -103,8 +103,8 @@ def main():
         # "output/text2video/test2_db_pyc_t2v_captions.json",
         # "output/text2video/caption_embedding_tf_mpnet.json",
         # "output/text2video/caption_embedding_tf.json",
-        #"output/text2video/caption_embedding_tf_mpnet.json",
-        "output/text2video/caption_embedding_tf_trained.json"
+        # "output/text2video/caption_embedding_tf_mpnet.json",
+        "output/text2video/test2_all_db_tf_35_mpnet_new_embeddings.json"
     ]
     
     results = {}

@@ -12,8 +12,8 @@ def create_embeddings(input_json_path):
     # 모델 로드
     print("📦 임베딩 모델 로딩 중...")
     #model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
-    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-    #model = SentenceTransformer('/data/ephemeral/home/final')
+    #model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    model = SentenceTransformer('/data/ephemeral/home/trained_mpnet4')
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
     
@@ -41,7 +41,7 @@ def create_embeddings(input_json_path):
         item['embedding'] = embedding.tolist()
     
     # 결과 저장
-    output_path = input_json_path.replace('.json', '_new_embeddings.json')
+    output_path = input_json_path.replace('.json', '_new_embeddings_444.json')
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
     

@@ -8,8 +8,8 @@ from sentence_transformers import SentenceTransformer
 
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
-    # all-mpnet-base-v2, all-MiniLM-L6-v2, /data/ephemeral/home/final
-    def __init__(self, json_path, model_name="sentence-transformers/all-MiniLM-L6-v2", use_gpu=True):
+    # all-mpnet-base-v2, all-MiniLM-L6-v2, /data/ephemeral/home/final, 'sentence-transformers/all-mpnet-base-v2'
+    def __init__(self, json_path, model_name='sentence-transformers/all-mpnet-base-v2', use_gpu=True):
         self.json_path = json_path
         self.model = SentenceTransformer(model_name)
         self.model.to('cuda')
@@ -73,8 +73,8 @@ class FaissSearch:
         
         results = []
         for idx, i in enumerate(I[0]):
-            caption_ko = ""
-            # caption_ko = translator.translate_en_to_ko(self.captions[i])
+            #caption_ko = ""
+            caption_ko = self.captions[i]
             
             # video_XXX/00001.mp4 형식에서 video_XXX.mp4 추출
             video_folder = self.data[i]['video_path'].split('/')[0]  # video_XXX
