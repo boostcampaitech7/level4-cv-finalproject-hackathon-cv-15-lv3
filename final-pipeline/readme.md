@@ -17,7 +17,7 @@ final-pipeline
 │
 ├── videos/
 │   ├── input_video/                   # 가산점 평가용 외부 데이터(비디오)파일 위치
-│   └── mapping/
+│   └── YouTube_8M/
 │       ├── YouTube_8M_annotation.json # Video_id 매핑 파일
 │	└── YouTube_8M_video/              # 권장 데이터(비디오) 파일 위치
 │
@@ -31,15 +31,13 @@ final-pipeline
 
 ## Video to Text 실행 방법
 
-
 ### 1. 기초 평가 (YouTube-8M) - 입력 방법
-
 
 평가를 위한 ***(video_id, timestamp_start, timestamp_end)*** 정보를 [video2text_input.yaml](./video2text_input.yaml) 파일에 입력합니다.
 
 - YouTube-8M ***비디오 제목 및 url*** 과 ***video_id*** 매핑 테이블은 [YouTube_8M_annotation.json](./mapping/YouTube_8M_annotation.json) 파일에서 확인할 수 있습니다.
-
 - 평가할 비디오의 ***시작(timestamp_start)*** 및 ***끝(timestamp_end)*** 구간을 명시해주세요.
+
 ```yaml
 # example : video2text_input.yaml
 
@@ -48,9 +46,13 @@ videos:
     timestamps:  # 처리할 시간 구간들
       - {start_time: 55.0, end_time: 60.0}
 ```
+
 ---
+
 ### 2. 가산점 평가 (외부 비디오) - 입력 방법
+
 외부 비디오를 평가하려면 [videos/input_video/](./videos/input_video/) 폴더에 가산점 평가용 비디오를 추가해주세요.
+
 ```bash
 final-pipeline
 │
@@ -61,6 +63,7 @@ final-pipeline
 ```
 
 평가를 위한 ***(video_id, timestamp_start, timestamp_end)*** 정보를 [video2text_input.yaml](./video2text_input.yaml) 파일에 입력해주세요.
+
 ```yaml
 # example : video2text_input.yaml
 
@@ -74,13 +77,18 @@ videos:
     timestamps:  # 처리할 시간 구간들
       - {start_time: 0.0, end_time: 5.0}
 ```
-----
+
+---
+
 ### 3. 실행 방법
+
 터미널에서 [final-pipeline](./final-pipeline) 폴더로 이동합니다.
+
 ```bash
 # final-pipline/
 python run.py video2text
 ```
+
 - 결과는 터미널에 출력됩니다.
 - 클립 파일을 확인하려면 [clips/video2text/](./clips/video2text/) 폴더를 확인하세요.
 
@@ -96,17 +104,19 @@ python run.py video2text
 # example : text2video_input.yaml
 process_new: false # 새로운 외부 비디오 입력 여부
 new_videos_dir : ./videos/iput_video # 새로운 외부 비디오 root directory
-top_k : 1    # 검색 영상 갯수                             
+top_k : 1    # 검색 영상 갯수                           
 queries:     # 입력 Query
     - "남자들이 헤드셋 끼고 컴퓨터 하는 장면"
     - "두 사람이 눈 오는 날 걷는 장면"
     - 복싱 경기하는 장면"
-``` 
+```
 
 ### 2. 가산점 평가 (외부 비디오 + YouTube-8M) - 입력 방법
+
 ***process_new*** 를 ***true*** 로 변경해주세요.
 
-***new_videos_dir*** 경로를 정확하게 입력해주세요.
+***new_videos_dir*** 경로는 Video to Text 처럼 맞춰져 있으므로
+[videos/input_video/](./videos/input_video/) 폴더에 가산점 평가용 비디오를 추가해주세요.
 
 ```yaml
 # example : text2video_input.yaml 
@@ -118,11 +128,13 @@ new_videos_dir : ./videos/iput_video # 새로운 외부 비디오 root directory
 ---
 
 ### 3. 실행 방법
+
 터미널에서 [final-pipeline](./final-pipeline) 폴더로 이동합니다.
+
 ```bash
 # final-pipline/
 python run.py text2video
 ```
+
 - 검색 결과는 터미널에 출력됩니다.
 - 클립 파일은 [clips/text2video/](./clips/text2video/) 폴더에서 확인할 수 있습니다.
-
