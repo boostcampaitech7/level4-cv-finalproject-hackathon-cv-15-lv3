@@ -35,7 +35,8 @@ final-pipeline
 ### 1. 기초 평가 (YouTube-8M) - 입력 방법
 
 
-YouTube-8M ***비디오 제목 및 url*** 과 ***video_id*** 매핑 테이블은 [YouTube_8M_annotation.json](./mapping/YouTube_8M_annotation.json) 파일에서 확인할 수 있습니다. 매핑 테이블에 ***비디오 제목 또는 url***을 통해 cmd+f (cntl+f)로 video_id를 찾을 수 있습니다.
+YouTube-8M ***비디오 제목 및 url*** 과 ***video_id*** 매핑 테이블은 [YouTube_8M_annotation.json](./mapping/YouTube_8M_annotation.json) 파일에서 확인할 수 있습니다. 
+매핑 테이블에서 cmd+f (cntl+f)로 ***비디오 제목 또는 url***을 입력해 video_id를 찾을 수 있습니다.
 
 - 평가를 위한 ***(video_id, timestamp_start, timestamp_end)*** 정보를 [video2text_input.yaml](./video2text_input.yaml) 파일에 입력합니다.
 
