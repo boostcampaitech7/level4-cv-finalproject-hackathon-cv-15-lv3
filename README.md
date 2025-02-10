@@ -2,7 +2,15 @@
     <img src="https://capsule-render.vercel.app/api?type=waving&color=auto&height=300&section=header&text=Tving-Hackathon&fontSize=40&animation=fadeIn&fontAlignY=38&desc=CV-15&descAlignY=51&descAlign=62"/>
 </p>
 
-# Data
+# Video to Text (Captioning)
+<img width="726" alt="스크린샷 2025-02-10 오후 5 38 53" src="https://github.com/user-attachments/assets/5e2f4442-326f-459e-9611-0bac2533db7c" />
+
+# Text to Video (Retrieval)
+<img width="749" alt="스크린샷 2025-02-10 오후 5 39 38" src="https://github.com/user-attachments/assets/e879bc4b-456e-43d0-96fe-7ff86ec0770d" />
+
+# Full Pipeline 
+<img width="654" alt="스크린샷 2025-02-10 오후 5 41 15" src="https://github.com/user-attachments/assets/139afa4c-2e4a-468a-86b1-b003d7f755e3" />
+
 
 ### Filter의 ID(mid)값 찾기 
 ```
