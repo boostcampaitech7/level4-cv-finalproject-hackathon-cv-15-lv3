@@ -49,9 +49,9 @@ def split_dataset(input_file, train_output, test_output, split_ratio=0.9):
 # ✅ 실행 코드
 if __name__ == "__main__":
     # 파일 경로 설정
-    input_file = "/data/ephemeral/home/min/original/sentence_pairs.json"
-    train_output_file = "/data/ephemeral/home/min/all-MiniLM-L6-v2/data/train_sentence_pairs.json.gz"  # Train용 gzip
-    test_output_file = "/data/ephemeral/home/min/all-MiniLM-L6-v2/data/test_sentence_pairs.json"       # Test용 JSON
+    input_file = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/data/sentence_pairs.json"
+    train_output_file = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/data/train_sentence_pairs.json.gz"  # Train용 gzip
+    test_output_file = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/data/test_sentence_pairs.json"       # Test용 JSON
 
     # 데이터셋 분할 및 저장
     split_dataset(input_file, train_output_file, test_output_file)

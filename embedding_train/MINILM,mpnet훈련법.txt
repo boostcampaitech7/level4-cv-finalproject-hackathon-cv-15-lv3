@@ -4,7 +4,9 @@
 
 
 1. 허깅페이스에서 모델 Clone 
-git clone https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+git clone https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2 #MINILM일경우
+
+git clone https://huggingface.co/sentence-transformers/all-mpnet-base-v2 #mpnet일 경우
 
 2. 모델 폴더 안에 
 train_script.py를
@@ -23,7 +25,7 @@ ex)
 ]
 
 4. 명령어를 입력해 모델을 훈련시킨다.
-nohup python train_script.py --steps 스텝수 --save_steps 몇스텝마다저장할지 --model 2에서다운받은모델폴더경로 --data_folder data/  data/data_config.json 모델아웃풋경로 > train_log_loss.out 2>&1 &
+nohup python train_script.py --steps 스텝수 --save_steps 몇스텝마다저장할지 --scale 러닝레이트느낌 --model 2에서다운받은모델폴더경로 --data_folder data/  data/data_config.json 모델아웃풋경로 > train_log_loss.out 2>&1 &
 
 
-nohup python train_script.py --steps 2000 --save_steps 10000 --model /data/ephemeral/home/min/all-MiniLM-L6-v2 --data_folder data/  data/data_config.json /data/ephemeral/home/finetune_output > train_log_loss.out 2>&1 &
+nohup python train_script.py --steps 2000 --save_steps 10000 --scale 5 --model /data/ephemeral/home/min/all-MiniLM-L6-v2 --data_folder data/  data/data_config.json /data/ephemeral/home/finetune_output > train_log_loss.out 2>&1 &

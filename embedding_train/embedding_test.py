@@ -11,7 +11,7 @@ class CaptionMatcher:
         :param model_path: SentenceTransformer 로컬 모델 경로
         :param test_json_path: 테스트 데이터 JSON 파일 경로
         """
-        self.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')  # 로컬 모델 로드
+        self.model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')  # 로컬 모델 로드
         #self.model = SentenceTransformer(model_path)  # 로컬 모델 로드
         self.test_json_path = test_json_path
         self.test_data = self.load_test_data()
@@ -111,9 +111,9 @@ class CaptionMatcher:
 
 # ✅ 실행 코드
 if __name__ == "__main__":
-    model_path = "/data/ephemeral/home/finetune_output/final"  # 미리 훈련된 모델 경로
-    test_json_path = "/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/data/test_sentence_pairs.json"  # Test 데이터셋
-    output_json_path = "/data/ephemeral/home/min/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/data/test_results.json"  # 결과 저장 경로
+    model_path = "/data/ephemeral/home/finetune/final"  # 미리 훈련된 모델 경로
+    test_json_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/data_train_test/test_sentence_pairs.json"  # Test 데이터셋
+    output_json_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/embedding_train/data_train_test/test_results.json"  # 결과 저장 경로
 
     matcher = CaptionMatcher(model_path, test_json_path)
     matcher.save_results(output_json_path, top_k=5)  # Top-5 유사 문장 저장

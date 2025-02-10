@@ -46,9 +46,7 @@ error_log_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv
 
 # 모델 및 프로세서 로드
 print("모델과 프로세서를 로드하는 중...")
-model, processor = load_model_and_processor(model_path, max_n_frames=8)
-model.half()
-model.eval()
+model, processor = load_model_and_processor(model_path, max_n_frames=6)
 
 # 기존 JSON 파일 로드
 with open(json_file_path, 'r') as f:
