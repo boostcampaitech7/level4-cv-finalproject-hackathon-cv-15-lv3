@@ -15,8 +15,7 @@
 
 ### Filter의 ID(mid)값 찾기 
 ```
-cd dataset
-grep "{Filter Name}" id.txt
+
 ```
 
 
