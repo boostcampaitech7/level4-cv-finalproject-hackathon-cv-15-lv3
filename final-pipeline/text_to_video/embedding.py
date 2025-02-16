@@ -11,27 +11,27 @@ from sentence_transformers import SentenceTransformer
 class FaissSearch:
     """FAISS 기반 검색 시스템 클래스"""
     # all-MiniLM-L6-v2, all-mpnet-base-v2
-    def __init__(self, json_path, model_name="all-mpnet-base-v2", use_gpu=True):
+    def __init__(self, json_path, model_name="/data/ephemeral/home/trained_mpnet4_final", use_gpu=True):
         init_start = time.time()
-        print("\n🔧 FAISS 검색 시스템 초기화 중...")
+        #print("\n🔧 FAISS 검색 시스템 초기화 중...")
         
         self.json_path = json_path
         
         # 1. 모델 로드
         model_start = time.time()
-        print("📥 임베딩 모델 로드 중...")
+        #print("📥 임베딩 모델 로드 중...")
         self.model = SentenceTransformer(model_name)
         self.model.to("cuda")
         self.model.eval()
-        print(f"✓ 모델 로드 완료 ({time.time() - model_start:.1f}초)")
+        #print(f"✓ 모델 로드 완료 ({time.time() - model_start:.1f}초)")
 
         # 2. JSON 데이터 로드
         json_start = time.time()
-        print("📂 JSON 데이터 로드 중...")
+        #print("📂 JSON 데이터 로드 중...")
         if os.path.exists(self.json_path):
             with open(self.json_path, 'r', encoding='utf-8') as f:
                 self.data = json.load(f)
-            print(f"✓ JSON 로드 완료 ({time.time() - json_start:.1f}초)")
+            #print(f"✓ JSON 로드 완료 ({time.time() - json_start:.1f}초)")
             
             # 3. 임베딩 생성 또는 로드
             embedding_start = time.time()
@@ -43,22 +43,22 @@ class FaissSearch:
                 # 임베딩 저장
                 with open(self.json_path, 'w', encoding='utf-8') as f:
                     json.dump(self.data, f, indent=4, ensure_ascii=False)
-            print(f"✓ 임베딩 처리 완료 ({time.time() - embedding_start:.1f}초)")
+            #print(f"✓ 임베딩 처리 완료 ({time.time() - embedding_start:.1f}초)")
         else:
             print(f"🚨 오류: {self.json_path} 파일을 찾을 수 없습니다!")
             return
 
         # 4. FAISS 인덱스 생성
         faiss_start = time.time()
-        print("🔍 FAISS 인덱스 생성 중...")
+        #print("🔍 FAISS 인덱스 생성 중...")
         self.captions = [entry["caption"] for entry in self.data]
         self.embeddings = np.array([entry["embedding"] for entry in self.data], dtype=np.float32)
         faiss.normalize_L2(self.embeddings)
         self._initialize_faiss(use_gpu)
-        print(f"✓ FAISS 인덱스 생성 완료 ({time.time() - faiss_start:.1f}초)")
+        #print(f"✓ FAISS 인덱스 생성 완료 ({time.time() - faiss_start:.1f}초)")
         
-        print(f"\n✨ 초기화 완료 (총 {time.time() - init_start:.1f}초)")
-        print(f"• 총 캡션 수: {len(self.data)}개")
+        print(f"\n✨ 검색 준비 완료 (총 {time.time() - init_start:.1f}초)")
+        #print(f"• 총 캡션 수: {len(self.data)}개")
 
     def _load_json_data(self):
         """JSON 파일을 로드하여 캡션 및 임베딩을 가져옴"""
@@ -83,8 +83,6 @@ class FaissSearch:
         # 1. 번역
         translate_start = time.time()
         translated_query = translator.translate_ko_to_en(input_text)
-        print(f"🔎 검색어: '{input_text}'")
-        print(f"🔎 번역된 검색어: '{translated_query}'")
         translate_time = time.time() - translate_start
         
         if not translated_query:
@@ -120,8 +118,8 @@ class FaissSearch:
             # 유사도 가중치 적용
             similarity = float(D[0][idx])
             if 'video_id' not in video_info or not video_info['video_id']:
-                weighted_similarity = similarity * 1.3  # 30% 가중치 증가
-                print(f"  ⚖️ 외부 데이터 가중치 적용: {similarity:.4f} → {weighted_similarity:.4f}")
+                weighted_similarity = similarity * 2
+                #print(f"  ⚖️ 외부 데이터 가중치 적용: {similarity:.4f} → {weighted_similarity:.4f}")
                 results.append((weighted_similarity, video_info))
             else:
                 results.append((similarity, video_info))

@@ -261,7 +261,7 @@ def sample_video(
     vr = decord.VideoReader(video_path, num_threads=1, ctx=decord.cpu(0))
     vr.seek(0)
     fps = vr.get_avg_fps()
-    total_frames = min(fps*5-1,len(vr))
+    total_frames = min(fps*5-1,len(vr)) #5초 영상 최대 프레임 수
 
     start_frame = 0
     end_frame = total_frames - 1

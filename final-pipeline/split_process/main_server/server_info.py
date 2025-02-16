@@ -5,8 +5,8 @@ class ServerInfo:
         self.username = username
 
 SERVERS = [
-    ServerInfo("10.28.224.149", 31655, "root"),
-    ServerInfo("10.28.224.47", 30767, "root"),
-    ServerInfo("10.28.224.118", 32740, "root"),
-    ServerInfo("10.28.224.178", 32289, "root")
+    ServerInfo("your_ip_here", "your_port_here", "your_username_here"),
+    ServerInfo("your_ip_here", "your_port_here", "your_username_here"),
+    ServerInfo("your_ip_here", "your_port_here", "your_username_here"),
+    ServerInfo("your_ip_here", "your_port_here", "your_username_here")
 ]

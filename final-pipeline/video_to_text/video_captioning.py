@@ -54,7 +54,7 @@ class TarsierVideoCaptioningPipeline:
         self.clip_counter = 0
         self.video_mapping = {}
         
-        self.translator = DeepGoogleTranslator()
+        self.translator = DeepLTranslator()
 
         self.video_metadata = video_metadata
 

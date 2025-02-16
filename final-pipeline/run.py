@@ -5,8 +5,6 @@ import os
 import sys
 import time
 import subprocess
-from tqdm import tqdm
-from moviepy import VideoFileClip
 from utils.translator import DeepGoogleTranslator, DeepLTranslator
 from video_to_text.video_captioning import TarsierVideoCaptioningPipeline
 from text_to_video.embedding import FaissSearch
@@ -65,7 +63,7 @@ def video_to_text_process():
         return
     
     # 비디오 처리 및 캡션 생성
-    result_txt_path = os.path.join(clips_dir, "search_result.txt")
+    result_txt_path = os.path.join(clips_dir, "captioning_result.txt")
     with open(result_txt_path, 'w', encoding='utf-8') as f:
         # 비디오 처리 및 캡션 생성
         print(f"\n🎥 비디오 처리 중... (총 {len(video_list)}개 클립)")
@@ -176,7 +174,7 @@ def text_to_video_search():
     top_k = config.get('top_k', 1)
 
     # DB 경로 설정
-    main_db_path = "database/caption_embedding_tf_35_mpnet.json"
+    main_db_path = "database/caption_embedding_tf_357_final4.json"
     new_db_path = "output/text2video/new_videos_captions.json"
     temp_db_path = "output/text2video/temp_combined_db.json"
 
@@ -189,12 +187,12 @@ def text_to_video_search():
             SplitConfig.VIDEOS_DIR = new_videos_dir
             SplitConfig.SPLIT_VIDEOS_DIR = os.path.join(new_videos_dir, "split")
             
-            print("📦 비디오 분할 및 분산 처리 시작...")
+            print("📦 외부 비디오 전처리 시작...")
             process_start_time = time.time()
             split_process_main()
             
             # JSON 결과 취합
-            print("\n📊 처리 결과 취합 중...")
+            print("\n📊 외부 비디오 전처리 결과 취합 중...")
             json_results = []
             json_dir = "/data/ephemeral/home/json"
             
@@ -216,7 +214,8 @@ def text_to_video_search():
             with open(temp_db_path, 'w', encoding='utf-8') as f:
                 json.dump(combined_data, f, indent=4, ensure_ascii=False)
             
-            print(f"⏱️ 새 비디오 처리 완료 ({time.time() - process_start_time:.1f}초)")
+            external_data_preprocessing_time = time.time() - process_start_time
+            print(f"⏱️ 외부 데이터 전처리 완료 시간 ({external_data_preprocessing_time:.1f}초)")
     
     # 클립 저장 디렉토리 설정
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -224,7 +223,7 @@ def text_to_video_search():
     os.makedirs(search_clips_dir, exist_ok=True)
 
     # 검색 결과 저장할 txt 파일 생성
-    result_txt_path = os.path.join(search_clips_dir, "search_result.txt")
+    result_txt_path = os.path.join(search_clips_dir, "retrieval_result.txt")
     with open(result_txt_path, 'w', encoding='utf-8') as f:
         # FAISS 검색
         search_time = time.time()
@@ -232,11 +231,11 @@ def text_to_video_search():
         
         # DB 선택
         if process_new and os.path.exists(temp_db_path):
-            search_db_path = temp_db_path #temp_db_path
-            print("🔍 통합 DB에서 검색 중...")
+            search_db_path = temp_db_path
+            print("🔍 통합 DB에서 검색 준비 중...")
         else:
             search_db_path = main_db_path
-            print("🔍 기본 DB에서 검색 중...")
+            print("🔍 기본 DB에서 검색 준비 중...")
         
         faiss_search = FaissSearch(json_path=search_db_path)
         all_results = {}  # 모든 쿼리의 결과를 저장할 딕셔너리
@@ -291,13 +290,12 @@ def text_to_video_search():
                 
                 # 클립 저장 결과를 txt에 기록
                 result_text = f"""
-결과 {i}
+결과
 📊 유사도: {similarity:.4f}
 🎬 비디오: {os.path.basename(video_path)}
 ⏰ 구간: {video_start_time}초 ~ {video_end_time}초
 📝 제목: {video_info['title']}
 🔍 검색어: {query_text}
-    캡션: {video_info['caption']}
 💾 저장된 클립: {clip_filename if os.path.exists(clip_path) else '저장 실패'}
 ----------------------------------------
 """

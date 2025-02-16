@@ -72,7 +72,7 @@ def process():
                     # 임베딩 생성
                     embedding = embedding_model.encode([caption])[0]
                     
-                    # 결과 저장 - 기존 DB 형식에 맞춤
+                    # 결과 저장
                     result = {
                         "video_path": f"{video_name}.mp4",  # 원본 비디오 이름
                         "video_id": "",  # 외부 비디오는 빈 문자열

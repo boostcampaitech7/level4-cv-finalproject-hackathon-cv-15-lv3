@@ -14,9 +14,9 @@ class ServerInfo:
         self.port = port
         self.username = username
 server=ServerInfo(
-            ip="10.28.224.178",
-            port=32289,
-            username="root",
+            ip="your_ip_here",
+            port="your_port_here",
+            username="your_username_here",
         )
 
 try:
