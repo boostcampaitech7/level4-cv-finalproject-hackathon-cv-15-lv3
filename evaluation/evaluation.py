@@ -1,0 +1,98 @@
+import pandas as pd
+from faiss_search import FaissSearch, DeepGoogleTranslator
+
+# 파일 경로 설정
+excel_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/evaluation/evaluation_dataset_v2.xlsx"
+db_path = "/data/ephemeral/home/level4-cv-finalproject-hackathon-cv-15-lv3/evaluation/caption_embedding_stella.json"
+
+# Excel 파일 읽기
+df = pd.read_excel(excel_path)
+
+# FAISS 검색 초기화
+translator = DeepGoogleTranslator()
+faiss_search = FaissSearch(json_path=db_path, use_gpu=False)  # CPU 사용
+
+
+# 평가 지표 초기화
+metrics = {
+    'total_queries': len(df),
+    'found_in_topk': 0,
+    'mean_rank': 0,
+    'mean_similarity': 0,
+    'detailed_results': []
+}
+top_k = 20
+print(f"\n📊 검색 성능 평가 시작 (top-{top_k})")
+
+for _, row in df.iterrows():
+    query = row['Query']
+    video_id = row['VideoURL'].split('=')[-1]
+    gt_start = row['StartTime']
+    gt_end = row['EndTime']
+    
+    # 쿼리 번역
+    query_en = translator.translate_ko_to_en(query)
+    print(f"\n🔍 쿼리 평가 중:")
+    print(f"   원본: {query}")
+    print(f"   번역: {query_en}")
+    
+    # 전체 DB에서 검색
+    results = faiss_search.find_similar_captions(query_en, top_k=top_k)
+    
+    # 결과 분석
+    found = False
+    rank = -1
+    max_similarity = 0
+    
+    for i, (caption_ko, similarity, video_info) in enumerate(results, 1):
+        # video_path에서 video_id 추출
+        result_video_id = video_info.get('video_id')
+        start_time = float(video_info['start_time'])
+        end_time = float(video_info['end_time'])
+        
+        # 정답 비디오이고 시간이 겹치는지 확인
+        if result_video_id == video_id:
+            time_overlap = (
+                (start_time <= gt_start <= end_time) or
+                (start_time <= gt_end <= end_time) or
+                (gt_start <= start_time <= gt_end)
+            )
+            if time_overlap:
+                found = True
+                rank = i
+                max_similarity = similarity
+                break
+    
+    # 결과 저장 - similarity를 float로 변환
+    result_info = {
+        'query': query,
+        'video_id': video_id,
+        'found': found,
+        'rank': rank,
+        'similarity': float(max_similarity),  # float32를 float로 변환
+        'gt_start': float(gt_start),         # 혹시 모를 다른 float32 값들도 변환
+        'gt_end': float(gt_end)
+    }
+    metrics['detailed_results'].append(result_info)
+    
+    # 통계 업데이트 - similarity를 float로 변환
+    if found:
+        metrics['found_in_topk'] += 1
+        metrics['mean_rank'] += rank
+        metrics['mean_similarity'] += float(max_similarity)
+    
+    # 결과 출력
+    status = "✅ 발견" if found else "❌ 미발견"
+    print(f"{status} (순위: {rank if found else 'N/A'}, 유사도: {max_similarity:.4f})")
+    print(f"   가장 유사하다고 판단한 캡션: {results[0][0]}")
+
+# 평균 계산
+if metrics['found_in_topk'] > 0:
+    metrics['mean_rank'] /= metrics['found_in_topk']
+    metrics['mean_similarity'] /= metrics['found_in_topk']
+
+print("\n📈 평가 결과:")
+print(f"총 쿼리 수: {metrics['total_queries']}")
+print(f"발견된 쿼리 수: {metrics['found_in_topk']}")
+print(f"평균 순위: {metrics['mean_rank']:.2f}")
+print(f"평균 유사도: {metrics['mean_similarity']:.4f}")

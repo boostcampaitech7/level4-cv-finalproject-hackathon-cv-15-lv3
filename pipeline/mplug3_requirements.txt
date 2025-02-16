@@ -1,0 +1,9 @@
+torch >= 2.1.1
+transformers
+decord
+moviepy
+deep-translator
+faiss-gpu
+sentence-transformers
+einops
+icecream
