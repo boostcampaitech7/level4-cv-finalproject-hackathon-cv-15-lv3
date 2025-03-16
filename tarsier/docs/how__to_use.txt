@@ -1,0 +1,42 @@
+1. 모델 다운로드
+apt install git git-lfs  #대용량 파일 다운을 위해해
+git clone https://huggingface.co/omni-research/Tarsier-7b
+
+2. git clone
+git clone https://github.com/bytedance/tarsier.git
+cd tarsier
+
+3. 기존 torch 삭제
+pip uninstall torch torchvision torchaudio -y   
+
+5. torch 다운로드
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+6. docs/requirements.txt를 install한다.
+Pillow==9.3.0
+decord==0.6.0
+gradio==4.31.5
+ninja==1.11.1.1
+omegaconf==2.3.0
+openai==1.14.2
+pathos==0.3.2
+prettytable==3.10.0
+protobuf==3.20.3
+pycocoevalcap==1.2
+pycocotools==2.0.8
+requests==2.31.0
+safetensors==0.4.2
+scikit-learn==1.4.1.post1
+scipy==1.13.0
+tiktoken==0.6.0
+transformers==4.44.2
+triton==2.2.0
+
+7.
+/tarsier/models/modeling_tarsier.py -> 402번째 줄 attn_implementation="sdpa" 로 교체
+
+8.
+ python3 -m tasks.inference_quick_start \                                                    
+  --model_name_or_path $1에서다운한모델경로로 \
+  --instruction "Describe the video in detail." \
+  --input_path $파일경로
